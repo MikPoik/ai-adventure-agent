@@ -13,3 +13,5 @@ harness_output/**/*.txt
 harness_output/**/*.md
 .steamship/secrets.toml
 src/.steamship/secrets.toml
+poetry.lock
+steamship.json

@@ -13,7 +13,7 @@ class AdventureNameGenerator(ServerSettingsFieldGenerator):
 
 Genre: {narrative_voice}
 Writing Style: {narrative_tone}
-Suggested Title (only a single, short title! nothing else!):"""
+Return suggested Title (only a single, short title! nothing else!):"""
 
     PROMPT_FROM_STORY = """## Instructions
 
@@ -28,7 +28,7 @@ Please take the following story fragment and turn it into a great story title.
 ## Title
 
 Remember: You're a master editor great at summarizing. Come up with the best title, and only write a single title; nothing else.
-
+Return the Title only.
 Title: """
 
     @staticmethod

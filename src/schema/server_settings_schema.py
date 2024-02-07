@@ -8,7 +8,7 @@ GENERAL_OPTIONS = [
         "label": "List in public directory",
         "description": "Check this box to list your adventure in the public directory.",
         "type": "boolean",
-        "requiresApproval": True,
+        "requiresApproval": False,
         "approvalRequestedField": "adventure_public_requested",
         "requiredText": "To make your adventure public and visible to the community, your account must be approved.",
     },

@@ -355,15 +355,16 @@ class GameREPL(AgentREPL):
 
 if __name__ == "__main__":
     basepath = pathlib.Path(__file__).parent.resolve()
-    with open(basepath / "../example_content/evil_science.yaml") as settings_file:
+    with open(basepath / "../example_content/nsfw_story.yaml") as settings_file:
         yaml_string = settings_file.read()
         server_settings = parse_yaml_raw_as(ServerSettings, yaml_string)
 
-    with open(basepath / "../example_content/christine.yaml") as character_file:
+    with open(basepath / "../example_content/velvet.yaml") as character_file:
         yaml_string = character_file.read()
         character = parse_yaml_raw_as(HumanCharacter, yaml_string)
 
     with Steamship.temporary_workspace() as client:
+        logging.warning("client info: " + str(client.config.workspace_handle))
         repl = GameREPL(
             cast(AgentService, AdventureGameService),
             agent_package_config={},

@@ -161,6 +161,16 @@ class StableDiffusionTheme(ImageTheme):
         template = f"{self.negative_prompt_prefix or ''}{negative_prompt}{self.negative_prompt_suffix or ''}"
         return safe_format(template, prompt_params or {})
 
+REALISTIC_VISION = StableDiffusionTheme(
+    name="realistic_vision",
+    prompt_prefix="realistic,",
+    model="https://civitai.com/api/download/models/272378",
+    model_architecture="sd",
+    negative_prompt_prefix="cartoon, painting, illustration, (worst quality, low quality, normal quality:2)",
+    num_inference_steps=80,
+    guidance_scale=5,
+    clip_skip=0,
+)
 
 # Pixel Art XL (https://civitai.com/models/120096/pixel-art-xl) by https://civitai.com/user/NeriJS
 PIXEL_ART_THEME_1 = StableDiffusionTheme(
@@ -173,7 +183,7 @@ PIXEL_ART_THEME_1 = StableDiffusionTheme(
 PIXEL_ART_THEME_2 = StableDiffusionTheme(
     name="pixel_art_2",
     prompt_prefix="((pixelart)) 16-bit retro, ",
-    loras=["https://civitai.com/api/download/models/123593"],
+
 )
 
 # From https://www.fal.ai/models/sd-loras
@@ -300,6 +310,7 @@ PREMADE_THEMES = [
     DALL_E_2_STANDARD,
     DALL_E_2_STELLAR_DREAMS,
     DALL_E_2_NEON_CYBERPUNK,
+    REALISTIC_VISION
 ]
 
-DEFAULT_THEME = PIXEL_ART_THEME_2
+DEFAULT_THEME = REALISTIC_VISION

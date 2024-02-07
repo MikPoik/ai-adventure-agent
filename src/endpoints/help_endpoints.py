@@ -25,8 +25,11 @@ class HelpMixin(PackageMixin):
         try:
             context = self.agent_service.build_default_context()
             choices_json_block = generate_action_choices(context=context)
+            cleaned_block_text = choices_json_block.text.split("\n\n")[0]
             choices = json.loads(choices_json_block.text)
-            return choices
+            choices_data = choices.get("choices", [])
+            print(choices_data)
+            return choices_data
 
         except BaseException as e:
             raise SteamshipError(

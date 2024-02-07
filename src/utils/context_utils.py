@@ -43,28 +43,31 @@ _SERVER_SETTINGS_KEY = "server-settings"
 _GAME_STATE_KEY = "user-settings"
 
 
-def with_function_capable_llm(instance: ChatLLM, context: AgentContext) -> AgentContext:
+def with_function_capable_llm(instance: ChatLLM,
+                              context: AgentContext) -> AgentContext:
     context.metadata[_FUNCTION_CAPABLE_LLM] = instance
     return context
 
 
 def with_server_settings(
-    server_settings: "ServerSettings", context: AgentContext  # noqa: F821
+        server_settings: "ServerSettings",
+        context: AgentContext  # noqa: F821
 ) -> "ServerSettings":  # noqa: F821
     context.metadata[_SERVER_SETTINGS_KEY] = server_settings
     return context
 
 
 def with_game_state(
-    game_state: "GameState", context: AgentContext  # noqa: F821
+        game_state: "GameState",
+        context: AgentContext  # noqa: F821
 ) -> "AgentContext":  # noqa: F821
     context.metadata[_GAME_STATE_KEY] = game_state
     return context
 
 
 def get_story_text_generator(
-    context: AgentContext, default: Optional[PluginInstance] = None
-) -> Optional[PluginInstance]:
+        context: AgentContext,
+        default: Optional[PluginInstance] = None) -> Optional[PluginInstance]:
     generator = context.metadata.get(_STORY_GENERATOR_KEY, default)
 
     if not generator:
@@ -75,43 +78,62 @@ def get_story_text_generator(
 
         open_ai_models = ["gpt-3.5-turbo", "gpt-4-1106-preview", "gpt-4"]
         replicate_models = ["dolly_v2", "llama_v2"]
+        together_ai_models = [
+            "teknium/OpenHermes-2-Mistral-7B", "Gryphe/MythoMax-L2-13b",
+            "NousResearch/Nous-Hermes-Llama2-70b",
+            "DiscoResearch/DiscoLM-mixtral-8x7b-v2",
+            "NousResearch/Nous-Hermes-2-Yi-34B",
+            "NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",
+            "NousResearch/Nous-Hermes-2-Mixtral-8x7B-SFT"
+        ]
+        lemonfox_models = ["zephyr-chat"]
 
         model_name = server_settings._select_model(
-            open_ai_models + replicate_models,
+            open_ai_models + replicate_models + together_ai_models +
+            lemonfox_models,
             default=server_settings.default_story_model,
             preferred=preferences.narration_model,
         )
-
+        config = {
+            "model": model_name,
+            "max_tokens": server_settings.default_story_max_tokens,
+            "temperature": server_settings.default_story_temperature,
+        }
         plugin_handle = None
+        version = None
         if model_name in open_ai_models:
             plugin_handle = "gpt-4"
         elif model_name in replicate_models:
             plugin_handle = "replicate-llm"
+        elif model_name in together_ai_models:
+            plugin_handle = "together-ai-llm-test"
+            version = "1.0.50"
+            config["api_key"] = ''
+            config["format_messages"] = True
+        elif model_name in lemonfox_models:
+            plugin_handle = "lemonfox-streaming-llm"
+            version = "1.0.1"
+            config["api_key"] = ""
 
-        generator = context.client.use_plugin(
-            plugin_handle,
-            config={
-                "model": model_name,
-                "max_tokens": server_settings.default_story_max_tokens,
-                "temperature": server_settings.default_story_temperature,
-            },
-        )
+        logging.warning("model: " + model_name)
+        #logging.warning("plugin_handle: " + plugin_handle)
+        generator = context.client.use_plugin(plugin_handle,
+                                              config=config,
+                                              version=version)
 
         if server_settings.allow_backup_story_models:
-            providers = [
-                lambda: generator
-            ]
+            providers = [lambda: generator]
             for backup_model_name in open_ai_models:
                 if backup_model_name == model_name:
                     continue
                 provider = lambda: context.client.use_plugin(
-                    "gpt-4",
+                    "gpt-3.5-turbo",
                     config={
                         "model": backup_model_name,
                         "max_tokens": server_settings.default_story_max_tokens,
-                        "temperature": server_settings.default_story_temperature
-                    }
-                )
+                        "temperature": server_settings.
+                        default_story_temperature
+                    })
                 providers.append(provider)
             generator = CascadingPlugin(instance_providers=providers)
 
@@ -121,8 +143,8 @@ def get_story_text_generator(
 
 
 def get_background_music_generator(
-    context: AgentContext, default: Optional[PluginInstance] = None
-) -> Optional[PluginInstance]:
+        context: AgentContext,
+        default: Optional[PluginInstance] = None) -> Optional[PluginInstance]:
     generator = context.metadata.get(_BACKGROUND_MUSIC_GENERATOR_KEY, default)
 
     if not generator:
@@ -143,8 +165,8 @@ def get_background_music_generator(
 
 
 def get_audio_narration_generator(
-    context: AgentContext, default: Optional[PluginInstance] = None
-) -> Optional[PluginInstance]:
+        context: AgentContext,
+        default: Optional[PluginInstance] = None) -> Optional[PluginInstance]:
     generator = context.metadata.get(_NARRATION_GENERATOR_KEY, default)
     server_settings = get_server_settings(context)
     if not generator:
@@ -171,8 +193,7 @@ def get_audio_narration_generator(
 
 
 def get_server_settings(
-    context: AgentContext,
-) -> "ServerSettings":  # noqa: F821
+    context: AgentContext, ) -> "ServerSettings":  # noqa: F821
     logging.debug(
         f"Refreshing Server Settings from workspace {context.client.config.workspace_handle}.",
         extra={
@@ -203,7 +224,8 @@ def get_server_settings(
     return server_settings
 
 
-def get_game_state(context: AgentContext) -> Optional["GameState"]:  # noqa: F821
+def get_game_state(
+        context: AgentContext) -> Optional["GameState"]:  # noqa: F821
     logging.debug(
         f"Refreshing Game State from workspace {context.client.config.workspace_handle}.",
         extra={
@@ -277,7 +299,8 @@ def save_game_state(game_state, context: AgentContext):
     context.metadata[_GAME_STATE_KEY] = game_state
 
 
-def get_current_quest(context: AgentContext) -> Optional["Quest"]:  # noqa: F821
+def get_current_quest(
+        context: AgentContext) -> Optional["Quest"]:  # noqa: F821
     """Return current Quest, or None."""
 
     game_state = get_game_state(context)
@@ -296,8 +319,7 @@ def get_current_quest(context: AgentContext) -> Optional["Quest"]:  # noqa: F821
 
 
 def get_current_conversant(
-    context: AgentContext,
-) -> Optional["NpcCharacter"]:  # noqa: F821
+    context: AgentContext, ) -> Optional["NpcCharacter"]:  # noqa: F821
     """Return the NpcCharacter of the current conversation, or None."""
     game_state = get_game_state(context)
 
@@ -321,8 +343,7 @@ def get_current_conversant(
 
 
 def switch_history_to_current_conversant(
-    context: AgentContext,
-) -> AgentContext:  # noqa: F821
+    context: AgentContext, ) -> AgentContext:  # noqa: F821
     """Return the NpcCharacter of the current conversation, or None."""
     npc = get_current_conversant(context)
 
@@ -335,16 +356,15 @@ def switch_history_to_current_conversant(
                 AgentLogging.MESSAGE_AUTHOR: AgentLogging.AGENT,
             },
         )
-        history = ChatHistory.get_or_create(
-            context.client, {"id": npc.name}, [], searchable=True
-        )
+        history = ChatHistory.get_or_create(context.client, {"id": npc.name},
+                                            [],
+                                            searchable=True)
         context.chat_history = history
     return context
 
 
 def switch_history_to_current_quest(
-    context: AgentContext,
-) -> AgentContext:  # noqa: F821
+    context: AgentContext, ) -> AgentContext:  # noqa: F821
     """Return the NpcCharacter of the current conversation, or None."""
     quest = get_current_quest(context)
 
@@ -357,15 +377,16 @@ def switch_history_to_current_quest(
                 AgentLogging.MESSAGE_AUTHOR: AgentLogging.AGENT,
             },
         )
-        history = ChatHistory.get_or_create(
-            context.client, {"id": f"quest:{quest.name}"}, [], searchable=True
-        )
+        history = ChatHistory.get_or_create(context.client,
+                                            {"id": f"quest:{quest.name}"}, [],
+                                            searchable=True)
         context.chat_history = history
     return context
 
 
 def get_function_capable_llm(
-    context: AgentContext, default: Optional[ChatLLM] = None  # noqa: F821
+    context: AgentContext,
+    default: Optional[ChatLLM] = None  # noqa: F821
 ) -> Optional[ChatLLM]:  # noqa: F821
     llm = context.metadata.get(_FUNCTION_CAPABLE_LLM, default)
     if not llm:

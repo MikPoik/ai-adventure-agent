@@ -14,13 +14,13 @@ Story Title: {name}
 Story Genre: {narrative_voice}, {narrative_tone}
 Story Synopsis: {short_description}
 Goal: {adventure_goal}{existing_chars}
-Supporting Character #{this_index} Name:"""
+Retrun only the name of Supporting Character #{this_index}, Name:"""
 
     PROMPT_BACKGROUND = """What is the name of Character #{this_index} in this story pitch?
 
 {adventure_background}
 
-Character #{this_index} Name, no further text:"""
+Return only Character #{this_index} Name, no further text. Name:"""
 
     @staticmethod
     def get_field() -> str:

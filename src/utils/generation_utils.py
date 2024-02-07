@@ -98,7 +98,7 @@ def send_story_generation(
             ]
         ),
         generation_for="Quest Content",
-        stop_tokens=["\n"],
+        stop_tokens=["\n\n","</s>","<|im_end|>","<|im_start|>"],
     )
     return block
 
@@ -133,7 +133,7 @@ def generate_likelihood_estimation(
             ]
         ),
         generation_for="Dice Roll",
-        stop_tokens=["\n"],
+        stop_tokens=["\n","</s>","<|im_end|>","<|im_start|>"],
         new_file=True,
         streaming=False,
     )
@@ -170,7 +170,7 @@ def generate_is_solution_attempt(
             ]
         ),
         generation_for="Is a solution attempt",
-        stop_tokens=["\n"],
+        stop_tokens=["\n","</s>","<|im_end|>","<|im_start|>"],
         new_file=True,
         streaming=False,
     )
@@ -197,7 +197,7 @@ def generate_quest_summary(
         ],
         filter=QuestNameFilter(quest_name=quest_name),
         generation_for="Quest Summary",
-        # stop_tokens=["\n"],
+         stop_tokens=["</s>","<|im_end|>","<|im_start|>"],
     )
     return block
 
@@ -507,15 +507,20 @@ def generate_action_choices(context: AgentContext) -> Block:
     game_state = get_game_state(context)
     quest_name = game_state.current_quest
 
-    prompt = (
-        f"Generate a multiple choice set of three options for the user to select {game_state.player.name}'s next "
-        f"action. The actions should be relevant to the story and the current challenge "
-        f"facing {game_state.player.name}. The generated actions should match the tone and narrative voice of the "
-        f"existing story.\n"
-        f"Action choices should be returned as a simple JSON list (and NOT a JSON object).\n"
-        f'Example: ["pet the dog", "launch missiles", "dance the Macarena"]'
-    )
+    prompt = f"""Generate JSON object with choices field of three options for the user to select {game_state.player.name}'s next action. The actions should be relevant to the story and the current challenge facing {game_state.player.name}. 
 
+## Rules
+- the generated actions should match the tone and narrative voice of the existing story.
+- action choices should be returned as a JSON with field "choices
+Example: 
+{{
+    "choices": ["pet the dog", "launch missiles", "dance the Macarena"]
+}}
+- Return only a JSON with "choices" field and list of three action choices. 
+- No other fields and no other text should be returned.
+
+JSON:"""
+    print(prompt)
     block = do_token_trimmed_generation(
         context,
         prompt,
@@ -548,5 +553,6 @@ def generate_action_choices(context: AgentContext) -> Block:
         generation_for="Action Choices",
         new_file=True,  # don't put this in the chat history. it is help content.
         streaming=False,
-    )
+    )    
+    logging.warning("Action choices: " + block.text)
     return block
