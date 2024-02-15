@@ -153,10 +153,16 @@ DEFAULT_THEMES = [{
     "label": "Outdoor Fantasy Painting (Stable Diffusion)",
     "imageSample": "/image_samples/cinematic_animation.jpeg",
 }, {
-    "value": "realistic_vision",
-    "label": "Realistic Vision (Stable Diffusion)",
+    "value": "omnigen_sdxl_nsfw",
+    "label": "Omnigen SDXL nsfw",
     "imageSample": "/image_samples/realistic_vision.png",
-}]
+},
+ {
+     "value": "realistic_vision",
+     "label": "realistic vision",
+     "imageSample": "/image_samples/realistic_vision.png",
+ }
+ ]
 
 
 def SettingField(  # noqa: N802
@@ -342,6 +348,10 @@ class ServerSettings(BaseModel):
             {
                 "value": "gpt-4",
                 "label": "GPT 4",
+            },
+            {
+                "value": "zephyr-chat",
+                "label": "zephyr-chat",
             },
             {
                 "value": "NousResearch/Nous-Hermes-2-Mixtral-8x7B-SFT",
@@ -1021,7 +1031,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="pixel_art_1",
+        default="realistic_vision",
         include_dynamic_options="image-themes",
     )
 
@@ -1032,7 +1042,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="pixel_art_1",
+        default="realistic_vision",
         include_dynamic_options="image-themes",
     )
 
@@ -1043,7 +1053,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="pixel_art_1",
+        default="realistic_vision",
         include_dynamic_options="image-themes",
     )
 
@@ -1054,7 +1064,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="pixel_art_1",
+        default="realistic_vision",
         include_dynamic_options="image-themes",
     )
 
@@ -1065,7 +1075,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="pixel_art_1",
+        default="realistic_vision",
         include_dynamic_options="image-themes",
     )
 

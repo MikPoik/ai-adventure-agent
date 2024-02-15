@@ -72,7 +72,8 @@ class DalleImageGenerator(ImageGenerator):
             options=options,
         )
 
-    def request_item_image_generation(self, item: Item, context: AgentContext) -> Task:
+    def request_item_image_generation(self, item: Item,
+                                      context: AgentContext) -> Task:
         game_state = get_game_state(context)
         server_settings = get_server_settings(context)
         tags = [
@@ -138,9 +139,8 @@ class DalleImageGenerator(ImageGenerator):
         task.wait()
         return task
 
-    def request_character_image_generation(
-        self, name: str, description: str, context: AgentContext
-    ) -> Task:
+    def request_character_image_generation(self, name: str, description: str,
+                                           context: AgentContext) -> Task:
         server_settings = get_server_settings(context)
         task = self.generate(
             context=context,
@@ -159,9 +159,8 @@ class DalleImageGenerator(ImageGenerator):
         task.wait()
         return task
 
-    def request_scene_image_generation(
-        self, description: str, context: AgentContext
-    ) -> Task:
+    def request_scene_image_generation(self, description: str,
+                                       context: AgentContext) -> Task:
         game_state = get_game_state(context)
         server_settings = get_server_settings(context)
 
@@ -191,7 +190,8 @@ class DalleImageGenerator(ImageGenerator):
         server_settings = get_server_settings(context)
 
         tags = [
-            Tag(kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.CAMP),
+            Tag(kind=TagKindExtensions.STORY_CONTEXT,
+                name=StoryContextTag.CAMP),
             Tag(kind=TagKindExtensions.CAMP, name=CampTag.IMAGE),
         ]
 
@@ -209,7 +209,8 @@ class DalleImageGenerator(ImageGenerator):
         task.wait()
         return task
 
-    def request_adventure_image_generation(self, context: AgentContext) -> Task:
+    def request_adventure_image_generation(self,
+                                           context: AgentContext) -> Task:
         server_settings = get_server_settings(context)
 
         tags = []
@@ -217,7 +218,8 @@ class DalleImageGenerator(ImageGenerator):
         task = self.generate(
             context=context,
             theme_name=server_settings.adventure_image_theme,
-            prompt="Cinematic, 8k, movie advertising image, {narrative_voice}, Movie Title: {name}",
+            prompt=
+            "Cinematic, 8k, movie advertising image, {narrative_voice}, Movie Title: {name}",
             template_vars={
                 "narrative_voice": server_settings.narrative_voice,
                 "name": server_settings.name,

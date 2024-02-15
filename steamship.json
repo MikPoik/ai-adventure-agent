@@ -1,7 +1,7 @@
 {
 	"type": "package",
 	"handle": "adventurer-test",
-	"version": "2.2.38",
+	"version": "2.2.40",
 	"description": "",
 	"author": "",
 	"entrypoint": "Unused",

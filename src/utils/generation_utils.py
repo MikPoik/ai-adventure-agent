@@ -50,23 +50,24 @@ from utils.tags import (
 )
 
 
-def send_agent_status_message(
-    name: AgentStatusMessageTag, context: AgentContext, value: Optional[dict] = None
-) -> Optional[Block]:
+def send_agent_status_message(name: AgentStatusMessageTag,
+                              context: AgentContext,
+                              value: Optional[dict] = None) -> Optional[Block]:
     block = Block(
         text="",
         tags=[
             Tag(kind=TagKind.ROLE, name="status-message", value=value),
-            Tag(kind=TagKind.AGENT_STATUS_MESSAGE, name=name.value, value=value),
+            Tag(kind=TagKind.AGENT_STATUS_MESSAGE,
+                name=name.value,
+                value=value),
         ],
     )
     emit(block, context=context)
     return block
 
 
-def send_story_generation(
-    prompt: str, quest_name: str, context: AgentContext
-) -> Optional[Block]:
+def send_story_generation(prompt: str, quest_name: str,
+                          context: AgentContext) -> Optional[Block]:
     """Generates and sends a background image to the player."""
     block = do_token_trimmed_generation(
         context,
@@ -79,107 +80,95 @@ def send_story_generation(
             Tag(kind=TagKindExtensions.QUEST, name=QuestTag.QUEST_CONTENT),
             QuestIdTag(quest_name),
         ],
-        filter=UnionFilter(
-            [
-                TagFilter(
-                    tag_types=[
-                        (TagKindExtensions.CHARACTER, CharacterTag.NAME),
-                        (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
-                        (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
-                        (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
-                        (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
-                        (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
-                        (TagKindExtensions.STORY_CONTEXT, StoryContextTag.VOICE),
-                        (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
-                    ]
-                ),
-                QuestNameFilter(quest_name=quest_name),
-                LastInventoryFilter(),
-            ]
-        ),
+        filter=UnionFilter([
+            TagFilter(tag_types=[
+                (TagKindExtensions.CHARACTER, CharacterTag.NAME),
+                (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
+                (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
+                (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
+                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
+                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
+                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.VOICE),
+                (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
+            ]),
+            QuestNameFilter(quest_name=quest_name),
+            LastInventoryFilter(),
+        ]),
         generation_for="Quest Content",
-        stop_tokens=["\n\n","</s>","<|im_end|>","<|im_start|>"],
+        stop_tokens=["\n", "</s>", "<|im_end|>", "<|im_start|>"],
     )
     return block
 
 
-def generate_likelihood_estimation(
-    prompt: str, quest_name: str, context: AgentContext
-) -> Optional[Block]:
+def generate_likelihood_estimation(prompt: str, quest_name: str,
+                                   context: AgentContext) -> Optional[Block]:
     """Generates a likelihood calculation of success for an event."""
     block = do_token_trimmed_generation(
         context,
         prompt,
         prompt_tags=[
-            Tag(kind=TagKindExtensions.QUEST, name=QuestTag.LIKELIHOOD_EVALUATION),
+            Tag(kind=TagKindExtensions.QUEST,
+                name=QuestTag.LIKELIHOOD_EVALUATION),
             QuestIdTag(quest_name),
         ],
         output_tags=[],
-        filter=UnionFilter(
-            [
-                TagFilter(
-                    tag_types=[
-                        (TagKindExtensions.CHARACTER, CharacterTag.NAME),
-                        (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
-                        (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
-                        (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
-                        (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
-                        (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
-                        (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
-                    ]
-                ),
-                QuestNameFilter(quest_name=quest_name),
-                LastInventoryFilter(),
-            ]
-        ),
+        filter=UnionFilter([
+            TagFilter(tag_types=[
+                (TagKindExtensions.CHARACTER, CharacterTag.NAME),
+                (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
+                (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
+                (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
+                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
+                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
+                (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
+            ]),
+            QuestNameFilter(quest_name=quest_name),
+            LastInventoryFilter(),
+        ]),
         generation_for="Dice Roll",
-        stop_tokens=["\n","</s>","<|im_end|>","<|im_start|>"],
+        stop_tokens=["\n", "</s>", "<|im_end|>", "<|im_start|>"],
         new_file=True,
         streaming=False,
     )
     return block
 
 
-def generate_is_solution_attempt(
-    prompt: str, quest_name: str, context: AgentContext
-) -> Optional[Block]:
+def generate_is_solution_attempt(prompt: str, quest_name: str,
+                                 context: AgentContext) -> Optional[Block]:
     """Decides whether input is an attempt to solve the problem."""
     block = do_token_trimmed_generation(
         context,
         prompt,
         prompt_tags=[
-            Tag(kind=TagKindExtensions.QUEST, name=QuestTag.IS_SOLUTION_ATTEMPT),
+            Tag(kind=TagKindExtensions.QUEST,
+                name=QuestTag.IS_SOLUTION_ATTEMPT),
             QuestIdTag(quest_name),
         ],
         output_tags=[],
-        filter=UnionFilter(
-            [
-                TagFilter(
-                    tag_types=[
-                        (TagKindExtensions.CHARACTER, CharacterTag.NAME),
-                        (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
-                        (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
-                        (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
-                        (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
-                        (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
-                        (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
-                    ]
-                ),
-                QuestNameFilter(quest_name=quest_name),
-                LastInventoryFilter(),
-            ]
-        ),
+        filter=UnionFilter([
+            TagFilter(tag_types=[
+                (TagKindExtensions.CHARACTER, CharacterTag.NAME),
+                (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
+                (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
+                (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
+                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
+                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
+                (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
+            ]),
+            QuestNameFilter(quest_name=quest_name),
+            LastInventoryFilter(),
+        ]),
         generation_for="Is a solution attempt",
-        stop_tokens=["\n","</s>","<|im_end|>","<|im_start|>"],
+        stop_tokens=["\n", "</s>", "<|im_end|>", "<|im_start|>"],
         new_file=True,
         streaming=False,
     )
     return block
 
 
-def generate_quest_summary(
-    quest_name: str, context: AgentContext, failed: bool = False
-) -> Optional[Block]:
+def generate_quest_summary(quest_name: str,
+                           context: AgentContext,
+                           failed: bool = False) -> Optional[Block]:
     """Generates and sends a quest summary to the player."""
     prompt = "Please summarize the above quest in one to two sentences."
     if failed:
@@ -197,14 +186,13 @@ def generate_quest_summary(
         ],
         filter=QuestNameFilter(quest_name=quest_name),
         generation_for="Quest Summary",
-         stop_tokens=["</s>","<|im_end|>","<|im_start|>"],
+        stop_tokens=["</s>", "<|im_end|>", "<|im_start|>"],
     )
     return block
 
 
-def generate_quest_item(
-    quest_name: str, player: HumanCharacter, context: AgentContext
-) -> (str, str, str):
+def generate_quest_item(quest_name: str, player: HumanCharacter,
+                        context: AgentContext) -> (str, str, str):
     """Generates a found item from a quest, returning a tuple of its name and description"""
     prompt = (
         f"What item did {player.name} find during that story? It should fit the setting of the story and "
@@ -215,22 +203,23 @@ def generate_quest_item(
         '"description": "A freshly baked, fluffy loaf of Italian bread, with a golden crust and a soft, airy interior. Ideal for heroically hiding a seasoned meatball from the sharp edge of a sous-chef\'s knife. The bread\'s cavernous insides provided the perfect escape tunnel for Mr. Meatball to avoid becoming part of the next culinary creation.", '
         '"visualDescription": "A freshly baked, fluffy loaf of Italian bread, with a golden crust and a soft, airy interior."'
         "}\n"
-        "Return ONLY JSON."
-    )
+        "Return ONLY JSON.")
     block = do_token_trimmed_generation(
         context,
         prompt,
         prompt_tags=[
-            Tag(kind=TagKindExtensions.QUEST, name=QuestTag.ITEM_GENERATION_PROMPT),
+            Tag(kind=TagKindExtensions.QUEST,
+                name=QuestTag.ITEM_GENERATION_PROMPT),
             QuestIdTag(quest_name),
         ],
         output_tags=[
-            Tag(kind=TagKindExtensions.QUEST, name=QuestTag.ITEM_GENERATION_CONTENT),
+            Tag(kind=TagKindExtensions.QUEST,
+                name=QuestTag.ITEM_GENERATION_CONTENT),
             QuestIdTag(quest_name),
         ],
         filter=UnionFilter(
-            [QuestNameFilter(quest_name=quest_name), LastInventoryFilter()]
-        ),
+            [QuestNameFilter(quest_name=quest_name),
+             LastInventoryFilter()]),
         generation_for="Quest Item",
         streaming=False,
     )
@@ -238,12 +227,13 @@ def generate_quest_item(
     json_block_text = block.text
     tidy_json = json_block_text.replace("```json", "").replace("```", "")
     item_json = json.loads(tidy_json.strip())
-    return item_json["name"], item_json["description"], item_json["visualDescription"]
+    return item_json["name"], item_json["description"], item_json[
+        "visualDescription"]
 
 
 def generate_merchant_inventory(
-    player: HumanCharacter, context: AgentContext
-) -> List[Tuple[str, str]]:
+        player: HumanCharacter,
+        context: AgentContext) -> List[Tuple[str, str]]:
     """Generates the inventory for a merchant"""
     prompt = f"Please list 5 objects that a merchant might sell {player.name} in a shop. They should fit the setting of the story and help {player.name} achieve their goal. Please respond only with ITEM NAME: <name> ITEM DESCRIPTION: <description>"
     block = do_generation(
@@ -255,27 +245,25 @@ def generate_merchant_inventory(
                 name=MerchantTag.INVENTORY_GENERATION_PROMPT,
             )
         ],
-        output_tags=[Tag(kind=TagKindExtensions.MERCHANT, name=MerchantTag.INVENTORY)],
-        filter=UnionFilter(
-            [
-                TagFilter(
-                    [
-                        (TagKindExtensions.CHARACTER, CharacterTag.NAME),
-                        (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
-                        (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
-                        (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
-                        (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
-                        (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
-                        (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
-                        (
-                            TagKindExtensions.MERCHANT,
-                            MerchantTag.INVENTORY_GENERATION_PROMPT,
-                        ),
-                    ]
+        output_tags=[
+            Tag(kind=TagKindExtensions.MERCHANT, name=MerchantTag.INVENTORY)
+        ],
+        filter=UnionFilter([
+            TagFilter([
+                (TagKindExtensions.CHARACTER, CharacterTag.NAME),
+                (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
+                (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
+                (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
+                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
+                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
+                (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
+                (
+                    TagKindExtensions.MERCHANT,
+                    MerchantTag.INVENTORY_GENERATION_PROMPT,
                 ),
-                LastInventoryFilter(),
-            ]
-        ),
+            ]),
+            LastInventoryFilter(),
+        ]),
         generation_for="Merchant Inventory",
         streaming=False,
     )
@@ -294,25 +282,14 @@ def generate_merchant_inventory(
     return result
 
 
-def generate_quest_arc(
-    player: HumanCharacter, context: AgentContext
-) -> List[QuestDescription]:
+def generate_quest_arc(player: HumanCharacter,
+                       context: AgentContext) -> List[QuestDescription]:
     server_settings = get_server_settings(context)
     prompt = (
         f"Please list {server_settings.quests_per_arc} quests of increasing difficulty that {player.name} will go in to achieve their overall "
         f"goal of {server_settings.adventure_goal}. They should fit the setting of the story. Responses should only be in the "
         f"form of: QUEST GOAL: <goal> QUEST LOCATION: <location name>\n"
-        f"Example (for a quest game for a dog):\n"
-        f"QUEST GOAL: find a treat QUEST LOCATION: Dog Park\n"
-        f"QUEST GOAL: make a friend QUEST LOCATION: Main Street\n"
-        f"QUEST GOAL: get bacon from the butcher QUEST LOCATION: Butcher Shop\n"
-        f"QUEST GOAL: learn a new trick QUEST LOCATION: Trainer's Office\n"
-        f"QUEST GOAL: fetch the newspaper QUEST LOCATION: Owner's House\n"
-        f"QUEST GOAL: prevent a robbery QUEST LOCATION: Owner's Store\n"
-        f"QUEST GOAL: impress the teacher during a show and tell QUEST LOCATION: Owner's Kid's School\n"
-        f"QUEST GOAL: steal some turkey QUEST LOCATION: Thanksgiving Dinner at Grandma's\n"
-        f"QUEST GOAL: get your nails trimmed QUEST LOCATION: Dog Wash\n"
-        f"QUEST GOAL: win an award QUEST LOCATION: Westminister Dog Show\n"
+        f"Return only the QUEST GOAL: <goal> QUEST LOCATION: <location name> list with {server_settings.quests_per_arc} quests. No other text."
     )
     result: List[QuestDescription] = []
     while len(result) != server_settings.quests_per_arc:
@@ -328,16 +305,14 @@ def generate_quest_arc(
             output_tags=[
                 Tag(kind=TagKindExtensions.QUEST_ARC, name=QuestArcTag.RESULT)
             ],
-            filter=TagFilter(
-                [
-                    (TagKindExtensions.CHARACTER, CharacterTag.NAME),
-                    (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
-                    (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
-                    (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
-                    (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
-                    (TagKindExtensions.QUEST_ARC, QuestArcTag.PROMPT),
-                ]
-            ),
+            filter=TagFilter([
+                (TagKindExtensions.CHARACTER, CharacterTag.NAME),
+                (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
+                (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
+                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
+                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
+                (TagKindExtensions.QUEST_ARC, QuestArcTag.PROMPT),
+            ]),
             generation_for="Quest Arc",
             streaming=False,
         )
@@ -350,8 +325,9 @@ def generate_quest_arc(
                     goal = parts[0].strip()
                     location = parts[1].strip().rstrip(".")
                     if "\n" in location:
-                        location = location[: location.index("\n")]
-                    result.append(QuestDescription(goal=goal, location=location))
+                        location = location[:location.index("\n")]
+                    result.append(
+                        QuestDescription(goal=goal, location=location))
     return result
 
 
@@ -368,19 +344,18 @@ def generate_story_intro(player: HumanCharacter, context: AgentContext) -> str:
             )
         ],
         output_tags=[
-            Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.INTRODUCTION)
+            Tag(kind=TagKindExtensions.CHARACTER,
+                name=CharacterTag.INTRODUCTION)
         ],
-        filter=TagFilter(
-            [
-                (TagKindExtensions.CHARACTER, CharacterTag.NAME),
-                (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
-                (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
-                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
-                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
-                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.VOICE),
-                (TagKindExtensions.CHARACTER, CharacterTag.INTRODUCTION_PROMPT),
-            ]
-        ),
+        filter=TagFilter([
+            (TagKindExtensions.CHARACTER, CharacterTag.NAME),
+            (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
+            (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
+            (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
+            (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
+            (TagKindExtensions.STORY_CONTEXT, StoryContextTag.VOICE),
+            (TagKindExtensions.CHARACTER, CharacterTag.INTRODUCTION_PROMPT),
+        ]),
         generation_for="Character Introduction",
         streaming=False,
     )
@@ -437,18 +412,16 @@ def do_generation(
 
     generator = get_story_text_generator(context)
 
-    output_tags.extend(
-        [
-            Tag(
-                kind=TagKind.CHAT,
-                name=ChatTag.ROLE,
-                value={TagValueKey.STRING_VALUE: RoleTag.ASSISTANT},
-            ),
-            Tag(kind=TagKind.CHAT, name=ChatTag.MESSAGE),
-            # See agent_service.py::chat_history_append_func for the duplication prevention this tag results in
-            Tag(kind=TagKind.CHAT, name="streamed-to-chat-history"),
-        ]
-    )
+    output_tags.extend([
+        Tag(
+            kind=TagKind.CHAT,
+            name=ChatTag.ROLE,
+            value={TagValueKey.STRING_VALUE: RoleTag.ASSISTANT},
+        ),
+        Tag(kind=TagKind.CHAT, name=ChatTag.MESSAGE),
+        # See agent_service.py::chat_history_append_func for the duplication prevention this tag results in
+        Tag(kind=TagKind.CHAT, name="streamed-to-chat-history"),
+    ])
 
     prompt_block = context.chat_history.append_system_message(
         text=prompt,
@@ -456,8 +429,7 @@ def do_generation(
     )
     # Intentionally reuse the filtering for the quest CONTENT
     block_indices = filter.filter_chat_history(
-        chat_history_file=context.chat_history.file, filter_for=generation_for
-    )
+        chat_history_file=context.chat_history.file, filter_for=generation_for)
 
     if prompt_block.index_in_file not in block_indices:
         block_indices.append(prompt_block.index_in_file)
@@ -496,7 +468,9 @@ def do_generation(
 
 
 def await_streamed_block(block: Block, context: AgentContext) -> Block:
-    while block.stream_state not in [StreamState.COMPLETE, StreamState.ABORTED]:
+    while block.stream_state not in [
+            StreamState.COMPLETE, StreamState.ABORTED
+    ]:
         time.sleep(0.4)
         block = Block.get(block.client, _id=block.id)
     context.chat_history.file.refresh()
@@ -527,32 +501,30 @@ JSON:"""
         prompt_tags=[
             # intentionally don't add this to the quest. it lives as sorta "out-of-quest" generation
             # that still requires quest data.
-            Tag(kind=TagKindExtensions.QUEST, name=QuestTag.ACTION_CHOICES_PROMPT),
+            Tag(kind=TagKindExtensions.QUEST,
+                name=QuestTag.ACTION_CHOICES_PROMPT),
         ],
         output_tags=[
             # provide a way to filter this out, in case this ends up in a saved file somewhere (not currently)
             Tag(kind=TagKindExtensions.QUEST, name=QuestTag.ACTION_CHOICES),
         ],
-        filter=UnionFilter(
-            [
-                TagFilter(
-                    tag_types=[
-                        (TagKindExtensions.CHARACTER, CharacterTag.NAME),
-                        (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
-                        (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
-                        (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
-                        (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
-                        (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
-                        (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
-                    ]
-                ),
-                QuestNameFilter(quest_name=quest_name),
-                LastInventoryFilter(),
-            ]
-        ),
+        filter=UnionFilter([
+            TagFilter(tag_types=[
+                (TagKindExtensions.CHARACTER, CharacterTag.NAME),
+                (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
+                (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
+                (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
+                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
+                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
+                (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
+            ]),
+            QuestNameFilter(quest_name=quest_name),
+            LastInventoryFilter(),
+        ]),
         generation_for="Action Choices",
+        stop_tokens=["\n\n","</s>", "<|im_end|>", "<|im_start|>"],
         new_file=True,  # don't put this in the chat history. it is help content.
         streaming=False,
-    )    
+    )
     logging.warning("Action choices: " + block.text)
     return block

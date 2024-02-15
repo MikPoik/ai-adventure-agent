@@ -106,10 +106,9 @@ def get_story_text_generator(
         elif model_name in replicate_models:
             plugin_handle = "replicate-llm"
         elif model_name in together_ai_models:
-            plugin_handle = "together-ai-llm-test"
-            version = "1.0.50"
+            plugin_handle = "together-ai-generator"
+            version = "1.0.1"
             config["api_key"] = ''
-            config["format_messages"] = True
         elif model_name in lemonfox_models:
             plugin_handle = "lemonfox-streaming-llm"
             version = "1.0.1"

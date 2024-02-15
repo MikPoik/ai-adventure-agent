@@ -73,6 +73,7 @@ class StableDiffusionWithLorasImageGenerator(ImageGenerator):
             "scheduler": theme.scheduler,
             "model_architecture": theme.model_architecture,
             "negative_prompt": negative_prompt,
+            "enable_safety_checker": False
         }
 
         start = time.perf_counter()
