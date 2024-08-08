@@ -15,3 +15,5 @@ harness_output/**/*.md
 src/.steamship/secrets.toml
 poetry.lock
 steamship.json
+.replit
+replit.nix

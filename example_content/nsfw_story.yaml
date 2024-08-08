@@ -1,7 +1,13 @@
-adventure_name: Sins Unleashed
-adventure_goal: To explore their darker desires 
+adventure_name: Tinder match
+adventure_goal: To find a match for you 
 narrative_tone: Explicit adult
-narrative_voice: Bold, imaginative, and filled with intrigue, this erotic literary work delves into the darkest corners of human desire and fantasy.
+narrative_voice: Bold, imaginative, and filled with intrigue.
 adventure_background: >- 
-    Sins Unleashed takes place in a sprawling metropolis, where the adult entertainment scene thrives in a network of exclusive clubs, private mansions, and hidden lairs. The city is a living, breathing entity, filled with dark alleys, neon lights, and an undercurrent of danger and excitement. The world is filled with a diverse cast of characters, each with their own secrets and desires. The scene is set for a thrilling exploration of adult entertainment, where the line between fantasy and reality blurs, and the stakes are higher than ever.
-
+    Velvet is trying to find a match for her.
+fixed_quest_arc:
+  - goal: Introduction and Ice Breaker
+    location: Velvet Lounge
+    description: Your goal is to help the user introduce themselves in an interesting way and break the ice.
+  - goal: Getting to Know Each Other
+    location: Velvet Lounge
+    description: Encourage the user to ask and answer questions about personal interests, hobbies, and experiences.

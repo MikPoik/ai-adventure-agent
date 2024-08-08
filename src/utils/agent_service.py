@@ -382,6 +382,7 @@ class AgentService(PackageService):
 
         # AgentContexts serve to allow the AgentService to run agents
         # with appropriate information about the desired tasking.
+        
         if context_id is not None:
             logging.warning(
                 "This agent ALWAYS uses the context id `default` since it is a game occuping an entire workspace, not confined to a single chat history. "
@@ -390,7 +391,7 @@ class AgentService(PackageService):
 
         # NOTA BENE!
         context_id = "default"
-
+    
         use_llm_cache = self.use_llm_cache
         if runtime_use_llm_cache := kwargs.get("use_llm_cache"):
             use_llm_cache = runtime_use_llm_cache
@@ -431,7 +432,6 @@ class AgentService(PackageService):
             server_settings, context
         )  # TODO: This shouldn't bve necessary since get_server_settings caches it.
         # TODO(doug): figure out how to make this selectable.
-
         self._agent_context = context
         return context
 

@@ -63,7 +63,7 @@ class StableDiffusionWithLorasImageGenerator(ImageGenerator):
         lora_json_str = json.dumps(lora_list)
 
         options = {
-            "seed": theme.seed,
+            #"seed": theme.seed,
             "model_name": theme.model,
             "loras": lora_json_str,
             "image_size": image_size,
@@ -75,8 +75,9 @@ class StableDiffusionWithLorasImageGenerator(ImageGenerator):
             "negative_prompt": negative_prompt,
             "enable_safety_checker": False
         }
-
+        #print(options)
         start = time.perf_counter()
+        #print("Generating image for: \n\n"+str(prompt)+"\n\n")
         task = sd.generate(
             text=prompt,
             tags=tags,

@@ -21,11 +21,13 @@ from steamship.invocable import Config
 from steamship.utils.repl import AgentREPL
 
 from agents.camp_agent import CampAgent
+
 from agents.diagnostic_agent import DiagnosticAgent
 from agents.generating_agent import GeneratingAgent
 from agents.npc_agent import NpcAgent
 from agents.onboarding_agent import OnboardingAgent
 from agents.quest_agent import QuestAgent
+from agents.chat_agent import ChatAgent
 from endpoints.camp_endpoints import CampMixin
 from endpoints.game_state_endpoints import GameStateMixin
 from endpoints.help_endpoints import HelpMixin
@@ -114,16 +116,22 @@ class AdventureGameService(AgentService):
         """Pydantic definition of the user-settable Configuration of this Agent."""
 
         telegram_bot_token: str = Field(
-            "", description="[Optional] Secret token for connecting to Telegram"
-        )
+            "",
+            description="[Optional] Secret token for connecting to Telegram")
         eleven_labs_voice_id: str = Field(
             "pNInz6obpgDQGcFmaJgB",
             description="[Optional] ElevenLabs voice ID (default: Adam)",
         )
         openai_api_key: str = Field(
             "",
-            description="An openAI API key to use. If left default, will use Steamship's API key.",
+            description=
+            "An openAI API key to use. If left default, will use Steamship's API key.",
         )
+        togetherai_api_key: str = Field(
+            "",
+            description="Together AI API key defined in src/schema/server_settings.py for now",
+        )
+
 
     config: BasicAgentServiceConfig
     """The configuration block that users who create an instance of this agent will provide."""
@@ -147,46 +155,42 @@ class AdventureGameService(AgentService):
             SteamshipWidgetTransport(
                 client=self.client,
                 agent_service=cast(AgentService, self),
-            )
-        )
+            ))
 
         # APIs for Controlling the Game
         # -----------------------------
 
         # API for getting and setting server settings
         self.add_mixin(
-            ServerSettingsMixin(
-                client=self.client, agent_service=cast(AgentService, self)
-            )
-        )
+            ServerSettingsMixin(client=self.client,
+                                agent_service=cast(AgentService, self)))
 
         self.add_mixin(
-            GameStateMixin(client=self.client, agent_service=cast(AgentService, self))
-        )
+            GameStateMixin(client=self.client,
+                           agent_service=cast(AgentService, self)))
 
         self.add_mixin(
-            CampMixin(client=self.client, agent_service=cast(AgentService, self))
-        )
+            CampMixin(client=self.client,
+                      agent_service=cast(AgentService, self)))
 
         self.add_mixin(
-            QuestMixin(client=self.client, agent_service=cast(AgentService, self))
-        )
+            QuestMixin(client=self.client,
+                       agent_service=cast(AgentService, self)))
 
         self.add_mixin(
-            NpcMixin(client=self.client, agent_service=cast(AgentService, self))
-        )
+            NpcMixin(client=self.client,
+                     agent_service=cast(AgentService, self)))
 
         self.add_mixin(
             OnboardingMixin(
                 client=self.client,
                 agent_service=cast(AgentService, self),
                 openai_api_key=self.config.openai_api_key,
-            )
-        )
+            ))
 
         self.add_mixin(
-            HelpMixin(client=self.client, agent_service=cast(AgentService, self))
-        )
+            HelpMixin(client=self.client,
+                      agent_service=cast(AgentService, self)))
 
         # Instantiate the core game agents
         function_capable_llm = ChatOpenAI(self.client)
@@ -196,12 +200,19 @@ class AdventureGameService(AgentService):
             tools=[],
             llm=function_capable_llm,
             openai_api_key=self.config.openai_api_key,
+            togetherai_api_key=self.config.togetherai_api_key
         )
+
         self.quest_agent = QuestAgent(tools=[], llm=function_capable_llm)
         self.camp_agent = CampAgent(llm=function_capable_llm)
         self.npc_agent = NpcAgent(llm=function_capable_llm)
+        self.chat_agent = ChatAgent(
+            tools=[],
+            llm=function_capable_llm,
+            togetherai_api_key=self.config.togetherai_api_key)
 
-    def get_default_agent(self, throw_if_missing: bool = True) -> Optional[Agent]:
+    def get_default_agent(self,
+                          throw_if_missing: bool = True) -> Optional[Agent]:
         """Returns the active agent.
 
         The game is built with different agents which manage different aspects of the game.
@@ -213,10 +224,14 @@ class AdventureGameService(AgentService):
         - If game_state.current_quest: QUEST AGENT
         - Else: CAMP AGENT
         """
+        
+
         context = self.build_default_context()
+
         game_state = get_game_state(context)
         active_mode = game_state.active_mode
-
+    
+            
         logging.debug(
             f"Game State: {json.dumps(game_state.dict())}.",
             extra={
@@ -232,6 +247,8 @@ class AdventureGameService(AgentService):
             sub_agent = self.onboarding_agent
         elif active_mode == ActiveMode.NPC_CONVERSATION:
             sub_agent = self.npc_agent
+        elif active_mode == ActiveMode.CHAT:
+                sub_agent = self.chat_agent   
         elif active_mode == ActiveMode.QUEST:
             sub_agent = self.quest_agent
         elif active_mode == ActiveMode.CAMP:
@@ -274,7 +291,8 @@ class GameREPL(AgentREPL):
             context_id=context_id,
             **kwargs,
         )
-        self.agent_instance = self.agent_class(client=client, config=self.config)
+        self.agent_instance = self.agent_class(client=client,
+                                               config=self.config)
 
     def run_with_client(self, client: Steamship, **kwargs):
         # Override so we can not clobber self.agent_instance
@@ -293,21 +311,25 @@ class GameREPL(AgentREPL):
         # Determine the responder, which may have been custom-supplied on the agent.
         responder = getattr(self.agent_instance, self.method or "prompt")
         # Send first empty string
-        self.print_object_or_objects(
-            responder(prompt="", context_id=self.context_id, **kwargs)
-        )
+        #self.print_object_or_objects(
+            #responder(prompt="", context_id=self.context_id, **kwargs))
         # Skip camp agent and go on a quest
-        self.print_object_or_objects(
-            responder(prompt="Go on a quest", context_id=self.context_id, **kwargs)
-        )
+        
+        #self.print_object_or_objects(
+        #    responder(prompt="Go on a chat", # or Go on a chat/npc/quest
+        #              context_id=self.context_id,
+        #              **kwargs))
         while True:
-            input_text = input(colored(text="Input: ", color="blue"))  # noqa: F821
-            output = responder(prompt=input_text, context_id=self.context_id, **kwargs)
+            input_text = input(colored(text="Input: ",
+                                       color="blue"))  # noqa: F821
+            output = responder(prompt=input_text,
+                               context_id=self.context_id,
+                               **kwargs)
             self.print_object_or_objects(output)
 
-    def print_object_or_objects(
-        self, output: Union[List, Any], metadata: Optional[Dict[str, Any]] = None
-    ):
+    def print_object_or_objects(self,
+                                output: Union[List, Any],
+                                metadata: Optional[Dict[str, Any]] = None):
         context = AgentContext.get_or_create(
             client=self.agent_instance.client,
             context_keys={"id": "default"},
@@ -317,45 +339,41 @@ class GameREPL(AgentREPL):
             if block.index_in_file > self.last_seen_block:
                 if block.stream_state == StreamState.STARTED:
                     start_time = time.perf_counter()
-                    while (
-                        block.stream_state
-                        not in [
+                    while (block.stream_state not in [
                             StreamState.COMPLETE,
                             StreamState.ABORTED,
-                        ]
-                        and (time.perf_counter() - start_time) < 30
-                    ):
+                    ] and (time.perf_counter() - start_time) < 30):
                         time.sleep(0.4)
                         block = Block.get(block.client, _id=block.id)
             self.print_new_block(block)
-        self.last_seen_block = context.chat_history.file.blocks[-1].index_in_file
+        self.last_seen_block = context.chat_history.file.blocks[
+            -1].index_in_file
         super().print_object_or_objects(output, metadata)
 
     def print_new_block(self, block: Block):
         tag_kinds = {tag.kind for tag in block.tags}
         # tag_names = {tag.name for tag in block.tags}
-        if (
-            TagKind.STATUS_MESSAGE not in tag_kinds
-            and TagKindExtensions.INSTRUCTIONS not in tag_kinds
-            and block.chat_role not in [RoleTag.USER]
-        ):
+        if (TagKind.STATUS_MESSAGE not in tag_kinds
+                and TagKindExtensions.INSTRUCTIONS not in tag_kinds
+                and block.chat_role not in [RoleTag.USER]):
             tag_texts = "".join(
-                sorted({f"[{tag.kind},{tag.name}]" for tag in block.tags})
-            )
+                sorted({f"[{tag.kind},{tag.name}]"
+                        for tag in block.tags}))
             if block.is_text():
                 output = f"{tag_texts} {block.text}\n"
             else:
                 output = f"{tag_texts} {block.raw_data_url}"
             print(
-                textwrap.fill(
-                    output, subsequent_indent="  ", break_long_words=False, width=150
-                )
-            )
+                textwrap.fill(output,
+                              subsequent_indent="  ",
+                              break_long_words=False,
+                              width=150))
 
 
 if __name__ == "__main__":
     basepath = pathlib.Path(__file__).parent.resolve()
-    with open(basepath / "../example_content/nsfw_story.yaml") as settings_file:
+    with open(basepath /
+              "../example_content/nsfw_story.yaml") as settings_file:
         yaml_string = settings_file.read()
         server_settings = parse_yaml_raw_as(ServerSettings, yaml_string)
 
@@ -376,4 +394,5 @@ if __name__ == "__main__":
         game_state.player = character
         save_game_state(game_state, context)
 
-        repl.run()  # dumping history seems to provide empty results, so removing
+        repl.run(
+        )  # dumping history seems to provide empty results, so removing

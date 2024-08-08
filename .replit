@@ -1,7 +1,7 @@
 modules = ["python-3.10:v18-20230807-322e88b"]
 
 hidden = [".pythonlibs"]
-run = "ship run local --no-ngrok"
+run = "python src/api.py"
 
 [nix]
 channel = "stable-23_05"
@@ -10,5 +10,9 @@ channel = "stable-23_05"
 language = "python3"
 
 [deployment]
-run = ["sh", "-c", "ship run local"]
+run = ["sh", "-c", "python src/api.py"]
 deploymentTarget = "cloudrun"
+
+[[ports]]
+localPort = 8443
+externalPort = 80

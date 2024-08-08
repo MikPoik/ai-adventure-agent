@@ -1,7 +1,7 @@
 {
 	"type": "package",
-	"handle": "adventurer-test",
-	"version": "2.2.40",
+	"handle": "ai-adventure-test",
+	"version": "2.2.53-rc16",
 	"description": "",
 	"author": "",
 	"entrypoint": "Unused",
@@ -13,7 +13,10 @@
 			"examples",
 			".cache",
 			".upm",
-			".pythonlibs"
+			".pythonlibs",
+			".git",
+			".config",
+			".local"			
 		]
 	},
 	"configTemplate": {
@@ -30,6 +33,11 @@
 		"openai_api_key": {
 			"type": "string",
 			"description": "An openAI API key to use. If left default, will use Steamship's API key.",
+			"default": ""
+		},
+		"togetherai_api_key": {
+			"type": "string",
+			"description": "Together AI API key defined in src/schema/server_settings.py for now",
 			"default": ""
 		}
 	},

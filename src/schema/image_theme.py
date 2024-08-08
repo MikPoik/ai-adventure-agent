@@ -220,6 +220,19 @@ REALISTIC_VISION = StableDiffusionTheme(
     clip_skip=0,
 )
 
+ORANGEABYSS_THEME = StableDiffusionTheme(
+    name="orange_abyss",
+    prompt_prefix="Real life scene with character,nude,naked,uncensored",
+    model=
+    "https://civitai.com/api/download/models/5038?type=Model&format=SafeTensor&size=full&fp=fp16",
+    model_architecture="sd",
+    negative_prompt_prefix="(worst quality, low quality, normal quality:2)",
+    num_inference_steps=20,
+    guidance_scale=6,
+    scheduler="DPM++ 2M SDE Karras",
+    clip_skip=2,
+)
+
 # Pixel Art XL (https://civitai.com/models/120096/pixel-art-xl) by https://civitai.com/user/NeriJS
 PIXEL_ART_THEME_1 = StableDiffusionTheme(
     name="pixel_art_1",
@@ -353,7 +366,7 @@ PREMADE_THEMES = [
     CINEMATIC_ANIMATION, EPIC_REALISM, SD_XL_NO_LORAS, DALL_E_3_NATURAL_HD,
     DALL_E_3_NATURAL_STANDARD, DALL_E_3_VIVID_HD, DALL_E_3_VIVID_STANDARD,
     DALL_E_2_STANDARD, DALL_E_2_STELLAR_DREAMS, DALL_E_2_NEON_CYBERPUNK,
-    REALISTIC_VISION, OMNIGEN_SDXL_NSFW, COLOSSUS_SDXL_NSFW
+    REALISTIC_VISION, OMNIGEN_SDXL_NSFW, COLOSSUS_SDXL_NSFW, ORANGEABYSS_THEME
 ]
 
-DEFAULT_THEME = REALISTIC_VISION
+DEFAULT_THEME = ORANGEABYSS_THEME

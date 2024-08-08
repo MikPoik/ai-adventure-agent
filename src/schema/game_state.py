@@ -17,6 +17,7 @@ class ActiveMode(str, Enum):
     NPC_CONVERSATION = "npc-conversation"
     DIAGNOSTIC = "diagnostic"
     ERROR = "error"  # Indicates that the game has hit an unrecoverable error.
+    CHAT = "chat"
 
 
 class GameState(BaseModel):
@@ -101,6 +102,21 @@ class GameState(BaseModel):
         default=None, description="The name of the remote diagnostic test to run"
     )
 
+    chat_mode: Optional[bool] = Field(
+        False, description="Using plain chat mode"
+    )
+    chat_intro_complete: Optional[bool] = Field(
+        False, description="Whether the chat intro has been completed"
+    )
+    genre: Optional[str] = Field(
+        "",
+        description="The genre of the game. This is used to determine the tone"
+    )
+    tone: Optional[str] = Field(
+        "",
+        description="The tone of the game. This is used to determine the voice"
+    )
+
     def update_from_web(self, other: "GameState"):
         """Perform a gentle update so that the website doesn't accidentally blast over this if it diverges in
         structure."""
@@ -133,13 +149,13 @@ class GameState(BaseModel):
         elif self.profile_image_url:
             return True
         else:
-            return False
+            return True#False
 
     def camp_image_requested(self) -> bool:
-        return True if self.camp.image_block_url else False
+        return True# if self.camp.image_block_url else False
 
     def camp_audio_requested(self) -> bool:
-        return True if self.camp.audio_block_url else False
+        return True# if self.camp.audio_block_url else False
 
     def dict(self, **kwargs) -> dict:
         """Return the dict representation, making sure the computed properties are there."""
@@ -157,7 +173,9 @@ class GameState(BaseModel):
             return ActiveMode.ONBOARDING
         if self.in_conversation_with:
             return ActiveMode.NPC_CONVERSATION
-        if self.current_quest:
+        if self.chat_mode:
+            return ActiveMode.CHAT
+        if self.current_quest and not self.chat_mode:
             return ActiveMode.QUEST
         return ActiveMode.CAMP
 

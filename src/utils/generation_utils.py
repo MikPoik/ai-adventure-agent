@@ -48,6 +48,22 @@ from utils.tags import (
     StoryContextTag,
     TagKindExtensions,
 )
+from utils.moderation_utils import is_block_excluded
+from steamship.cli.utils import is_in_replit
+
+def log_filtered_blocks(context, filter: ChatHistoryFilter, generation_for: str = "Generic"):
+    """
+    Logs the indices and texts of chat history blocks filtered by a given filter.
+    """
+    # Get the chat_history_file from the context
+    chat_history_file = context.chat_history.file
+    # Use the provided filter to get the filtered blocks
+    filtered_blocks = filter.filter_blocks(chat_history_file=chat_history_file)
+    # Log the details in a formatted way, excluding blocks marked as excluded
+    logging.warning(f"[{generation_for}] Filtered blocks details:")
+    for block, _ in filtered_blocks:
+        if not is_block_excluded(block):
+            logging.warning(f"Block Index: {block.index_in_file},Chat Role: {block.chat_role} Text: {block.text.strip()}")
 
 
 def send_agent_status_message(name: AgentStatusMessageTag,
@@ -65,10 +81,25 @@ def send_agent_status_message(name: AgentStatusMessageTag,
     emit(block, context=context)
     return block
 
-
+    
 def send_story_generation(prompt: str, quest_name: str,
                           context: AgentContext) -> Optional[Block]:
     """Generates and sends a background image to the player."""
+    #user_block = send_user_message(context,quest_name)
+    filter=UnionFilter([
+        TagFilter(tag_types=[
+            (TagKindExtensions.CHARACTER, CharacterTag.NAME),
+            (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
+            (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
+            (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
+            (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
+            (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
+            (TagKindExtensions.STORY_CONTEXT, StoryContextTag.VOICE),
+            (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
+        ]),
+        QuestNameFilter(quest_name=quest_name),
+        LastInventoryFilter(),
+    ])
     block = do_token_trimmed_generation(
         context,
         prompt,
@@ -97,12 +128,15 @@ def send_story_generation(prompt: str, quest_name: str,
         generation_for="Quest Content",
         stop_tokens=["\n", "</s>", "<|im_end|>", "<|im_start|>"],
     )
+    #log_filtered_blocks(context, filter, "Quest Content Generation")
     return block
 
 
 def generate_likelihood_estimation(prompt: str, quest_name: str,
                                    context: AgentContext) -> Optional[Block]:
     """Generates a likelihood calculation of success for an event."""
+    #print("prompt :"+prompt)
+    prompt_block = Block(text=prompt)
     block = do_token_trimmed_generation(
         context,
         prompt,
@@ -136,6 +170,20 @@ def generate_likelihood_estimation(prompt: str, quest_name: str,
 def generate_is_solution_attempt(prompt: str, quest_name: str,
                                  context: AgentContext) -> Optional[Block]:
     """Decides whether input is an attempt to solve the problem."""
+    #print("prompt :"+prompt)
+    filter=UnionFilter([
+        TagFilter(tag_types=[
+            (TagKindExtensions.CHARACTER, CharacterTag.NAME),
+            (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
+            (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
+            (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
+            (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
+            (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
+            (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
+        ]),
+        QuestNameFilter(quest_name=quest_name),
+        LastInventoryFilter(),
+    ])
     block = do_token_trimmed_generation(
         context,
         prompt,
@@ -145,24 +193,13 @@ def generate_is_solution_attempt(prompt: str, quest_name: str,
             QuestIdTag(quest_name),
         ],
         output_tags=[],
-        filter=UnionFilter([
-            TagFilter(tag_types=[
-                (TagKindExtensions.CHARACTER, CharacterTag.NAME),
-                (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
-                (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
-                (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
-                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
-                (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
-                (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
-            ]),
-            QuestNameFilter(quest_name=quest_name),
-            LastInventoryFilter(),
-        ]),
+        filter=filter,
         generation_for="Is a solution attempt",
-        stop_tokens=["\n", "</s>", "<|im_end|>", "<|im_start|>"],
+        stop_tokens=["</s>", "<|im_end|>", "<|im_start|>"],
         new_file=True,
         streaming=False,
     )
+    #log_filtered_blocks(context, filter, "Quest Content Generation")
     return block
 
 
@@ -287,9 +324,8 @@ def generate_quest_arc(player: HumanCharacter,
     server_settings = get_server_settings(context)
     prompt = (
         f"Please list {server_settings.quests_per_arc} quests of increasing difficulty that {player.name} will go in to achieve their overall "
-        f"goal of {server_settings.adventure_goal}. They should fit the setting of the story. Responses should only be in the "
-        f"form of: QUEST GOAL: <goal> QUEST LOCATION: <location name>\n"
-        f"Return only the QUEST GOAL: <goal> QUEST LOCATION: <location name> list with {server_settings.quests_per_arc} quests. No other text."
+        f"goal of {server_settings.adventure_goal}. They should fit the setting of the story.\n"
+        f"Return only the `QUEST GOAL: <goal> QUEST LOCATION: <location name>` list with {server_settings.quests_per_arc} quests. No other text."
     )
     result: List[QuestDescription] = []
     while len(result) != server_settings.quests_per_arc:
@@ -443,9 +479,7 @@ def do_generation(
     # don't pollute workspace with temporary/working files that contain data like: "LIKELY"
     append_output_to_file = False if not output_file_id else True
 
-    logging.debug(
-        f"current prompt({prompt_block.index_in_file}, {tokens(prompt_block)}): {prompt}"
-    )
+    logging.debug( f"current prompt({prompt_block.index_in_file}, {tokens(prompt_block)}): {prompt}")
     logging.debug(f"selected blocks: {sorted(block_indices)}")
 
     task = generator.generate(
@@ -473,6 +507,9 @@ def await_streamed_block(block: Block, context: AgentContext) -> Block:
     ]:
         time.sleep(0.4)
         block = Block.get(block.client, _id=block.id)
+    
+    if block.is_text() and is_in_replit:
+        logging.warning(block.text)
     context.chat_history.file.refresh()
     return block
 
@@ -494,7 +531,7 @@ Example:
 - No other fields and no other text should be returned.
 
 JSON:"""
-    print(prompt)
+    #print(prompt)
     block = do_token_trimmed_generation(
         context,
         prompt,

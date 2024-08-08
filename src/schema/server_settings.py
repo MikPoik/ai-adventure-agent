@@ -161,7 +161,13 @@ DEFAULT_THEMES = [{
      "value": "realistic_vision",
      "label": "realistic vision",
      "imageSample": "/image_samples/realistic_vision.png",
- }
+ },
+
+{
+   "value": "orange_abyss",
+   "label": "Orange abyss",
+   "imageSample": "/image_samples/realistic_vision.png",
+}
  ]
 
 
@@ -332,7 +338,7 @@ class ServerSettings(BaseModel):
 
     # Language Generation Settings - Story telling
     default_story_model: str = SettingField(
-        default="NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",
+        default="teknium/OpenHermes-2p5-Mistral-7B",
         label="Story LLM Model",
         description="Model used to generate story text.",
         type="select",
@@ -350,16 +356,8 @@ class ServerSettings(BaseModel):
                 "label": "GPT 4",
             },
             {
-                "value": "zephyr-chat",
-                "label": "zephyr-chat",
-            },
-            {
                 "value": "NousResearch/Nous-Hermes-2-Mixtral-8x7B-SFT",
                 "label": "Nous-Hermes-2-Mixtral-8x7B-SFT",
-            },
-            {
-                "value": "DiscoResearch/DiscoLM-mixtral-8x7b-v2",
-                "label": "DiscoLM-mixtral-8x7b-v2",
             },
             {
                 "value": "NousResearch/Nous-Hermes-2-Yi-34B",
@@ -369,6 +367,14 @@ class ServerSettings(BaseModel):
                 "value": "NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",
                 "label": "Nous-Hermes-2-Mixtral-8x7B-DPO",
             },
+            {
+                "value": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+                "label": "Mixtral-8x7B-Instruct-v0.1",
+            },
+            {
+                "value":"teknium/OpenHermes-2p5-Mistral-7B",
+                "label":"Mistral 2.5"
+            }
         ],
     )
 
@@ -646,7 +652,7 @@ Can include descriptions of genre, characters, specific items and locations that
         label="Camp Image Prompt",
         description="Prompt for generating the camp image.",
         type="longtext",
-        default="{tone} {genre} camp.",
+        default="{tone} {genre}, movie scene",
         variables_permitted={
             "tone": "Description of the tone of the adventure.",
             "genre": "Description of the genre of the adventure.",
@@ -805,7 +811,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "The prompt that will be used to generate the player's profile image.",
         type="longtext",
         default=
-        "close-up profile picture, focus on head, {name}, {description}",
+        "Character close-up profile picture, focus on head, {name}, {description}",
         variables_permitted={
             "name": "The name of the character.",
             "description": "Description of the character.",
@@ -1031,7 +1037,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="realistic_vision",
+        default="orange_abyss",
         include_dynamic_options="image-themes",
     )
 
@@ -1042,7 +1048,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="realistic_vision",
+        default="orange_abyss",
         include_dynamic_options="image-themes",
     )
 
@@ -1053,7 +1059,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="realistic_vision",
+        default="orange_abyss",
         include_dynamic_options="image-themes",
     )
 
@@ -1064,7 +1070,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="realistic_vision",
+        default="orange_abyss",
         include_dynamic_options="image-themes",
     )
 
@@ -1075,7 +1081,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="realistic_vision",
+        default="orange_abyss",
         include_dynamic_options="image-themes",
     )
 
@@ -1105,6 +1111,25 @@ Can include descriptions of genre, characters, specific items and locations that
         max=10,
         min=-1,
     )
+    chat_mode: Optional[bool] = SettingField(
+        default=True,
+        label="Use chat mode only",
+        description="Use chat mode only,instead of questing",
+        type="bool",
+    )
+    auto_start_chat_mode: Optional[bool] = SettingField(
+        default=True,
+        label="Use chat mode only in quest",
+        description="Use chat mode only,instead of questing",
+        type="bool",
+    )
+    togetherai_api_key: Optional[str] = SettingField(
+        default="",
+        label="togetherai_api_key",
+        description="togetherai_api_key",
+        type="text",
+    )
+
 
     @property
     def narration_voice_id(self) -> str:

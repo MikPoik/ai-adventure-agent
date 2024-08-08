@@ -1,7 +1,9 @@
 from steamship import Block
 from steamship.agents.schema import Action, Agent, AgentContext, FinishAction
-
+import logging
 from tools.start_quest_tool import StartQuestTool
+from tools.start_conversation_tool import StartConversationTool
+from tools.start_chat_quest_tool import StartChatQuestTool
 
 
 class CampAgent(Agent):
@@ -11,7 +13,7 @@ class CampAgent(Agent):
 
     def __init__(self, **kwargs):
         super().__init__(
-            tools=[StartQuestTool()],  # , StartConversationTool()],
+            tools=[StartQuestTool(),StartConversationTool(),StartChatQuestTool()],  # , StartConversationTool()],
             **kwargs,
         )
 
@@ -25,6 +27,10 @@ class CampAgent(Agent):
 
         if "quest" in last_message.lower():
             return Action(tool=self.tools[0].name, output=[], input=[])
+        elif "npc "in last_message.lower():
+            return Action(tool=self.tools[1].name, output=[], input=[Block(text="The Merchant")])
+        elif "chat" in last_message.lower():
+            return Action(tool=self.tools[2].name, output=[], input=[])
         else:
             return FinishAction(
                 output=[Block(text=f"Camp agent received text: {last_message}")]

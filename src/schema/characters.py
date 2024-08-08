@@ -26,6 +26,12 @@ class Character(BaseModel):
     image: Optional[str] = Field(
         default=None, description="The URL for the character image"
     )
+    personality: Optional[str] = Field(
+        None, description="The personality of the character."
+    )
+    appearance: Optional[str] = Field(
+        None, description="The appearance of the character."
+    )
 
     def fetch_inventory(self, references: List[str]) -> List[Item]:
         """Fetches inventory that matches the provided names."""
@@ -41,6 +47,8 @@ class Character(BaseModel):
             self.background = other.background
         if other.inventory:
             self.inventory = other.inventory
+        if other.personality:
+            self.personality = other.personality
 
     def inventory_description(self) -> str:
         result = f"{self.name} has the following items in their inventory:"
@@ -71,6 +79,10 @@ class NpcCharacter(Character):
     disposition_toward_player: Optional[int] = Field(
         1,
         description="The disposition of the Npc toward the player. 1=Doesn't know you. 5=Knows you very well.",
+    )
+    motivation: Optional[str] = Field(
+        "",
+        description="The motivation of the Npc. Can be 'business', 'social', or 'other'."
     )
 
 

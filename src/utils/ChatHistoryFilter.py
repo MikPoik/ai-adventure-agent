@@ -289,3 +289,4 @@ class TrimmingStoryContextFilter(ChatHistoryFilter):
         for block in block_list:
             return_tuples.append((block, id_to_reasons.get(block.id)))
         return return_tuples
+

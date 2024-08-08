@@ -23,6 +23,7 @@ class OnboardingMixin(PackageMixin):
     agent_service: AgentService
     client: Steamship
     openai_api_key: str
+    togetherai_api_key: str
 
     def __init__(
         self, client: Steamship, agent_service: AgentService, openai_api_key: str
@@ -30,6 +31,7 @@ class OnboardingMixin(PackageMixin):
         self.client = client
         self.agent_service = agent_service
         self.openai_api_key = openai_api_key
+        self.togetherai_api_key = ""
 
     @post("/set_character_name")
     def set_character_name(self, name: str, **kwargs):
@@ -167,5 +169,41 @@ class OnboardingMixin(PackageMixin):
             )
             return story_intro
         except BaseException as e:
+            context = self.agent_service.build_default_context()
+            record_and_throw_unrecoverable_error(e, context)
+
+    @post("init_companion_chat")
+    def init_companion_chat(self,name:str,description:str = ".",personality:str = ".",appearance:str = ".",background:str = ".", **kwargs) -> bool:
+        try:
+            if personality == "":
+                personality = "N/A"
+            if background == "":
+                background = "N/A"
+            if appearance == "":
+                appearance = "N/A"
+            if description == "":
+                description = "N/A"
+    
+            context = self.agent_service.build_default_context()
+            game_state = get_game_state(context)
+            game_state.player.name = name
+            game_state.player.description = description
+            game_state.player.personality = personality
+            game_state.player.appearance = appearance
+            game_state.player.background = background                
+            save_game_state(game_state, context)
+            
+            if not game_state.onboarding_agent_has_completed:
+                self.onboarding_agent = OnboardingAgent(
+                    client=self.client, tools=[], openai_api_key=self.openai_api_key,togetherai_api_key=self.togetherai_api_key
+                )
+                self.onboarding_agent.run(context)
+                return True
+            else:
+                return False
+        except RunNextAgentException:
+            return game_state.chat_history_for_onboarding_complete
+        except BaseException as e:
+            logging.error(e)
             context = self.agent_service.build_default_context()
             record_and_throw_unrecoverable_error(e, context)

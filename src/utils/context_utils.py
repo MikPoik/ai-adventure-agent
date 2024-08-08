@@ -32,6 +32,7 @@ from schema.game_state import GameState
 from schema.image_theme import DEFAULT_THEME, PREMADE_THEMES, ImageTheme
 from schema.server_settings import ServerSettings
 from utils.tags import QuestIdTag
+from utils.moderation_utils import mark_block_as_excluded
 
 _STORY_GENERATOR_KEY = "story-generator"
 _FUNCTION_CAPABLE_LLM = (
@@ -61,7 +62,7 @@ def with_game_state(
         game_state: "GameState",
         context: AgentContext  # noqa: F821
 ) -> "AgentContext":  # noqa: F821
-    context.metadata[_GAME_STATE_KEY] = game_state
+    context.metadata[_GAME_STATE_KEY+context.id] = game_state
     return context
 
 
@@ -79,18 +80,15 @@ def get_story_text_generator(
         open_ai_models = ["gpt-3.5-turbo", "gpt-4-1106-preview", "gpt-4"]
         replicate_models = ["dolly_v2", "llama_v2"]
         together_ai_models = [
-            "teknium/OpenHermes-2-Mistral-7B", "Gryphe/MythoMax-L2-13b",
-            "NousResearch/Nous-Hermes-Llama2-70b",
-            "DiscoResearch/DiscoLM-mixtral-8x7b-v2",
             "NousResearch/Nous-Hermes-2-Yi-34B",
             "NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",
-            "NousResearch/Nous-Hermes-2-Mixtral-8x7B-SFT"
+            "NousResearch/Nous-Hermes-2-Mixtral-8x7B-SFT",
+            "mistralai/Mixtral-8x7B-Instruct-v0.1",
+            "teknium/OpenHermes-2p5-Mistral-7B"
         ]
-        lemonfox_models = ["zephyr-chat"]
 
         model_name = server_settings._select_model(
-            open_ai_models + replicate_models + together_ai_models +
-            lemonfox_models,
+            open_ai_models + replicate_models + together_ai_models,
             default=server_settings.default_story_model,
             preferred=preferences.narration_model,
         )
@@ -101,19 +99,18 @@ def get_story_text_generator(
         }
         plugin_handle = None
         version = None
+        
         if model_name in open_ai_models:
             plugin_handle = "gpt-4"
         elif model_name in replicate_models:
             plugin_handle = "replicate-llm"
         elif model_name in together_ai_models:
             plugin_handle = "together-ai-generator"
-            version = "1.0.1"
-            config["api_key"] = ''
-        elif model_name in lemonfox_models:
-            plugin_handle = "lemonfox-streaming-llm"
-            version = "1.0.1"
-            config["api_key"] = ""
+            version = "1.0.2"
+            config[
+                "api_key"] = server_settings.togetherai_api_key #in server settings for now untill we have a better way to do this
 
+        
         logging.warning("model: " + model_name)
         #logging.warning("plugin_handle: " + plugin_handle)
         generator = context.client.use_plugin(plugin_handle,
@@ -458,9 +455,11 @@ def await_ask(
         # Make sure we're tagging this for request rehydration
         base_tags.append(QuestIdTag(game_state.current_quest))
 
+
     # Make sure question is List[Block]
     if isinstance(question, str):
         output = [Block(text=question, tags=base_tags)]
+        mark_block_as_excluded(output[0]) #Dont save add question blocks to prompt
     else:
         for block in question:
             if not block.tags:
@@ -503,6 +502,8 @@ def await_ask(
                         AgentLogging.MESSAGE_AUTHOR: AgentLogging.AGENT,
                     },
                 )
+
+                #emit(answer, context)
                 return answer
 
     # Otherwise we set the key and throw the asking exception
