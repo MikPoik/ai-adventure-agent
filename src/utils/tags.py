@@ -76,6 +76,8 @@ class CharacterTag(str, Enum):
     INTRODUCTION = "introduction"
     INTRODUCTION_PROMPT = "introduction_prompt"
 
+    SEED = "seed"
+
 
 class StoryContextTag(str, Enum):
     TONE = "tone"
@@ -97,6 +99,7 @@ class QuestTag(str, Enum):
     LIKELIHOOD_EVALUATION = "likelihood_evaluation"
     DICE_ROLL = "dice_roll"
     IS_SOLUTION_ATTEMPT = "is_solution_attempt"
+    CHAT_QUEST = "chat-quest"
 
 
 class ItemTag(str, Enum):

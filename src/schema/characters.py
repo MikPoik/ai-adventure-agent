@@ -32,6 +32,9 @@ class Character(BaseModel):
     appearance: Optional[str] = Field(
         None, description="The appearance of the character."
     )
+    seed_message: Optional[str] = Field(
+        None, description="The seed message for the character."
+    )
 
     def fetch_inventory(self, references: List[str]) -> List[Item]:
         """Fetches inventory that matches the provided names."""

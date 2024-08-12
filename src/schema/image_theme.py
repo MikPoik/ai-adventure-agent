@@ -208,7 +208,7 @@ COLOSSUS_SDXL_NSFW = StableDiffusionTheme(
 
 REALISTIC_VISION = StableDiffusionTheme(
     name="realistic_vision",
-    prompt_prefix="realistic,nude,naked,uncensored,",
+    prompt_prefix="",
     model=
     "https://civitai.com/api/download/models/272376?type=Model&format=SafeTensor&size=pruned&fp=fp16",
     model_architecture="sd",
@@ -222,7 +222,7 @@ REALISTIC_VISION = StableDiffusionTheme(
 
 ORANGEABYSS_THEME = StableDiffusionTheme(
     name="orange_abyss",
-    prompt_prefix="Real life scene with character,nude,naked,uncensored",
+    prompt_prefix="",
     model=
     "https://civitai.com/api/download/models/5038?type=Model&format=SafeTensor&size=full&fp=fp16",
     model_architecture="sd",

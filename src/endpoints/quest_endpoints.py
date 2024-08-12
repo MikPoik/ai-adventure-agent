@@ -1,12 +1,12 @@
-from typing import List
-
+from typing import List,Optional
+import textwrap
 from steamship import Block, File, Steamship, SteamshipError, Tag
 from steamship.agents.schema import AgentContext
 from steamship.agents.service.agent_service import AgentService
 from steamship.data.tags.tag_constants import RoleTag
 from steamship.invocable import post
 from steamship.invocable.package_mixin import PackageMixin
-
+from steamship.agents.schema.message_selectors import MessageWindowMessageSelector
 from tools.end_quest_tool import EndQuestTool
 from tools.start_quest_tool import StartQuestTool
 from utils.context_utils import (
@@ -16,7 +16,7 @@ from utils.context_utils import (
 )
 from utils.error_utils import record_and_throw_unrecoverable_error
 from utils.generation_utils import generate_quest_arc
-from utils.tags import QuestIdTag, SceneTag, TagKindExtensions
+from utils.tags import QuestIdTag, SceneTag, TagKindExtensions,CharacterTag,StoryContextTag,InstructionsTag
 
 
 class QuestMixin(PackageMixin):
@@ -28,7 +28,100 @@ class QuestMixin(PackageMixin):
     def __init__(self, client: Steamship, agent_service: AgentService):
         self.client = client
         self.agent_service = agent_service
+        
+        @post("append_history")
+        def append_history(self,
+                           prompt: Optional[str] = None,
+                           context_id: Optional[str] = None):
+            """Append Bolna phonecall messages to the chat history. Need to add tags to the blocks."""
+            if prompt:
+                try:
+                    # Parse the JSON string to extract messages
+                    messages = loads(prompt)
+                    context = self.build_default_context(context_id)
 
+                    # Loop through each message and add it to chat history
+                    for message in messages:
+                        if message['role'] == 'assistant':
+                            context.chat_history.append_assistant_message(
+                                message['content'])
+                        elif message['role'] == 'user':
+                            context.chat_history.append_user_message(
+                                message['content'])
+                except Exception as e:
+                    logging.warning(
+                        "Failed to parse prompt or append to chat history: " +
+                        str(e))
+            return "OK"
+
+    
+    @post("delete_messages")
+    def delete_messages(self, context_id="", companionId=""):
+        """TODO: check if needs modification"""
+        #check history length, catch errors.
+        try:
+            context = self.build_default_context(context_id)
+            last_user_message = context.chat_history.last_user_message
+            last_agent_message = context.chat_history.last_agent_message
+            selector = MessageWindowMessageSelector(k=1)
+            user_message_count = 0
+            assistant_message_count = 0
+            for msg in context.chat_history.messages:
+                if msg.chat_role == RoleTag.USER:
+                    user_message_count += 1
+                elif msg.chat_role == RoleTag.ASSISTANT:
+                    assistant_message_count += 1
+
+            #Only delete messages after seed
+            if context.chat_history and assistant_message_count > 1 and user_message_count > 1:
+                context.chat_history.delete_messages(selector)
+                return "MESSAGES_DELETED"
+            else:
+                return "NO_MESSAGES_TO_DELETE"
+
+        except Exception as e:
+            logging.warning(str(e))
+            return "ERROR_DELETING_MESSAGES"
+            
+    @post("/clear_history")
+    def clear_history(self):
+        """Clears the agent's chat history."""
+        context = self.agent_service.build_default_context()
+        game_state = get_game_state(context)
+        context.chat_history.clear()
+        #Re-seed onboarding message, duplicate message template for now..
+        onboarding_message = game_state.onboarding_message.format(
+            player_name=game_state.player.name,
+            player_description=game_state.player.description,
+            player_appearance=game_state.player.appearance,
+            player_personality=game_state.player.personality)
+        context.chat_history.append_system_message(
+            text=onboarding_message,
+            tags=[
+                Tag(
+                    kind=TagKindExtensions.INSTRUCTIONS,
+                    name=InstructionsTag.ONBOARDING,
+                ),
+                Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.NAME),
+                Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.BACKGROUND),
+                Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.MOTIVATION),
+                Tag(
+                    kind=TagKindExtensions.CHARACTER, name=CharacterTag.DESCRIPTION
+                ),
+                Tag(
+                    kind=TagKindExtensions.STORY_CONTEXT,
+                    name=StoryContextTag.BACKGROUND,
+                ),
+                Tag(
+                    kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.TONE
+                ),
+                Tag(
+                    kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.VOICE
+                ),
+            ],
+        )
+        return "OK"
+        
     @post("/generate_quest_arc")
     def generate_quest_arc(self) -> List[dict]:
         context = self.agent_service.build_default_context()

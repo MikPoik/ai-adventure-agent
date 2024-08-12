@@ -15,6 +15,7 @@ from steamship.agents.schema.action import FinishAction
 from generators.generator_context_utils import (
     get_music_generator,
     get_quest_background_image_generator,
+    get_chat_image_generator
 )
 from schema.game_state import GameState
 from schema.quest import Quest, QuestChallenge, QuestDescription
@@ -63,7 +64,6 @@ class ChatAgent(InterruptiblePythonAgent):
 
     It can be slotted into as a state machine sub-agent by the overall agent.
     """
-    togetherai_api_key:str
     
     def run(self, context: AgentContext) -> Action:  # noqa: C901
         """
@@ -78,7 +78,6 @@ class ChatAgent(InterruptiblePythonAgent):
         server_settings = get_server_settings(context)
 
 
-
         logging.debug(
             "Running Chat Agent",
             extra={
@@ -90,13 +89,24 @@ class ChatAgent(InterruptiblePythonAgent):
         )
         
         if not game_state.chat_intro_complete:
-            prompt = f"""Introduce yourself as {game_state.player.name}"""            
+            #user_prompt = await_ask(
+                #f"What do you say next?",
+                #context,
+                #key_suffix=
+                #f"user input {quest.name}"
+
+            #)
             game_state.chat_intro_complete = True
+            user_prompt =""
+            if context.chat_history and context.chat_history.last_user_message:
+                if context.chat_history.last_user_message.text:
+                    user_prompt = context.chat_history.last_user_message.text
+                
             save_game_state(game_state, context)
             
             
             block = send_story_generation(
-            prompt=prompt,
+            prompt=user_prompt,
             quest_name=quest.name,
             context=context,
             )
@@ -113,10 +123,23 @@ class ChatAgent(InterruptiblePythonAgent):
 
             )
             save_game_state(game_state, context)
-            #response_plan = self.generate_plan(game_state, context, quest,user_input=user_prompt)
+            additional_info = ""
+            if server_settings.enable_images_in_chat:                
+                #TODO ask llm if we want to create image based on input
+                response_plan = self.generate_plan(game_state, context, quest,user_prompt=user_prompt)
+                logging.warning(response_plan)
+                if not "NoImage" in response_plan:
+                    #TODO: add image generation
+                
+                    if image_gen := get_chat_image_generator(context):
+                        logging.warning("Generating chat image")
+                        task=image_gen.request_chat_image_generation(
+                        description=response_plan, context=context
+                    )
+                    additional_info=". Note: You agreed to send the image already and have the image ready, so respond accordingly"
+                
             
-            
-            response_block = self.respond_to_user(game_state,context,quest)
+            response_block = self.respond_to_user(game_state,context,quest,user_prompt=user_prompt,additional_context=additional_info)
             #logging.warning(response_block.text)
             
             
@@ -146,59 +169,43 @@ class ChatAgent(InterruptiblePythonAgent):
         game_state: GameState,
         context: AgentContext,
         quest: Quest,
-        additional_info: str = "",
+        user_prompt: str = None,
+        additional_context: str = "",
     ):
-        prompt = f"{additional_info}What does character say next to keep the conversation fresh,authentic,natural,creative and engaging? Provide response to user only."
+        prompt = f"{user_prompt}{additional_context}"
         solution_block = send_story_generation(
-            prompt=prompt,
+            prompt=prompt,            
             quest_name=quest.name,
             context=context,
+            additional_context=additional_context, 
         )
         return await_streamed_block(solution_block, context)
 
-                
+
     def generate_plan(self, game_state: GameState, context: AgentContext,
-        quest: Quest,user_input:str):
-        logging.warning(user_input)
+    quest: Quest,user_prompt:str):
+
         prompt = textwrap.dedent(f"""\
-            Current game state:
-            Event:
-            Status: Ongoing
-            How should the game progress? Should you introduce an event between {game_state.player.name} and user, or should you continue the current state? Has user achieved the current goal? Has user asked for a visual?
-            Provide a possible event and goal for the game to progress.
-            If there is an ongoing event, provide a status for it.
-            Do not generate dialogue, just the event and goal and status, if needed generate a visual image description also.
-            If user is requesting for a visual of {game_state.player.name} you may provide one with image tool using Image: insert image description here
-            Provide response in format:
-            Event: short event description
-            Goal: short goal description
-            Status: short status description started/ongoing/completed
-            Tool: No Tool or tool call, example: Image: [insert image description here]""")
+        ### Instruction
+        Switch to function mode. 
+        If the user is asking for an image/selfie/visual of {game_state.player.name},
+        generate an matching image description keywords in square brackets, otherwise leave empty square brackets.
+        Respond only with given format, nothing else is necessary. This response is not included in chat log.
+        Respond using this format:
+        `[NoImage]` or `[Image: insert detailed image description keywords here for the image]`
+        
+        ### Input:
+        Last input from user to {game_state.player.name} was: "{user_prompt}"
+        
+        ### Response:
+        [NoImage]/[Image]: """)
 
         is_solution_attempt_response = generate_is_solution_attempt(
-        prompt=prompt,
-        quest_name=quest.name,
-        context=context,
-        )
-        logging.warning("problem prompt: " +prompt)
-        logging.warning(f"Plan response: {is_solution_attempt_response.text}")
-        return is_solution_attempt_response.text.strip()
-
-def generate_plan(self, game_state: GameState, context: AgentContext,
-    quest: Quest,user_input:str):
-
-    prompt = f"""Has user asked for a visual?
-If user is requesting for a visual of {game_state.player.name} you may provide one with image tool using Image: [insert image description here]
-
-Provide response in format:
-Tool: No Tool or tool call example `Image: [insert image description here]`"""
-
-    is_solution_attempt_response = generate_is_solution_attempt(
     prompt=prompt,
     quest_name=quest.name,
     context=context,
     )
-    logging.warning("problem prompt: " +prompt)
-    logging.warning(f"Plan response: {is_solution_attempt_response.text}")
-    return is_solution_attempt_response.text.strip()
+        logging.warning("problem prompt: " +prompt)
+        logging.warning(f"Plan response: {is_solution_attempt_response.text}")
+        return is_solution_attempt_response.text.strip()
 

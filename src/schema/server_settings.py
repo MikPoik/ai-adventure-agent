@@ -156,19 +156,15 @@ DEFAULT_THEMES = [{
     "value": "omnigen_sdxl_nsfw",
     "label": "Omnigen SDXL nsfw",
     "imageSample": "/image_samples/realistic_vision.png",
-},
- {
-     "value": "realistic_vision",
-     "label": "realistic vision",
-     "imageSample": "/image_samples/realistic_vision.png",
- },
-
-{
-   "value": "orange_abyss",
-   "label": "Orange abyss",
-   "imageSample": "/image_samples/realistic_vision.png",
-}
- ]
+}, {
+    "value": "realistic_vision",
+    "label": "realistic vision",
+    "imageSample": "/image_samples/realistic_vision.png",
+}, {
+    "value": "orange_abyss",
+    "label": "Orange abyss",
+    "imageSample": "/image_samples/realistic_vision.png",
+}]
 
 
 def SettingField(  # noqa: N802
@@ -337,45 +333,49 @@ class ServerSettings(BaseModel):
     """For use on the profile marketing page, during 'Magic Create' mode in the editor, and during onboarding."""
 
     # Language Generation Settings - Story telling
+    #Match list with context_utils.py model list
     default_story_model: str = SettingField(
         default="teknium/OpenHermes-2p5-Mistral-7B",
         label="Story LLM Model",
         description="Model used to generate story text.",
         type="select",
-        options=[
-            {
-                "value": "gpt-3.5-turbo",
-                "label": "GPT 3.5 Turbo",
-            },
-            {
-                "value": "gpt-4-1106-preview",
-                "label": "GPT 4 turbo preview",
-            },
-            {
-                "value": "gpt-4",
-                "label": "GPT 4",
-            },
-            {
-                "value": "NousResearch/Nous-Hermes-2-Mixtral-8x7B-SFT",
-                "label": "Nous-Hermes-2-Mixtral-8x7B-SFT",
-            },
-            {
-                "value": "NousResearch/Nous-Hermes-2-Yi-34B",
-                "label": "Nous-Hermes-2-Yi-34B",
-            },
-            {
-                "value": "NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",
-                "label": "Nous-Hermes-2-Mixtral-8x7B-DPO",
-            },
-            {
-                "value": "mistralai/Mixtral-8x7B-Instruct-v0.1",
-                "label": "Mixtral-8x7B-Instruct-v0.1",
-            },
-            {
-                "value":"teknium/OpenHermes-2p5-Mistral-7B",
-                "label":"Mistral 2.5"
-            }
-        ],
+        options=[{
+            "value": "gpt-3.5-turbo",
+            "label": "GPT 3.5 Turbo",
+        }, {
+            "value": "gpt-4-1106-preview",
+            "label": "GPT 4 turbo preview",
+        }, {
+            "value": "gpt-4",
+            "label": "GPT 4",
+        }, {
+            "value": "NousResearch/Nous-Hermes-2-Mixtral-8x7B-SFT",
+            "label": "Nous-Hermes-2-Mixtral-8x7B-SFT",
+        }, {
+            "value": "NousResearch/Nous-Hermes-2-Yi-34B",
+            "label": "Nous-Hermes-2-Yi-34B",
+        }, {
+            "value": "NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",
+            "label": "Nous-Hermes-2-Mixtral-8x7B-DPO",
+        }, {
+            "value": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+            "label": "Mixtral-8x7B-Instruct-v0.1",
+        }, {
+            "value": "teknium/OpenHermes-2p5-Mistral-7B",
+            "label": "OpenHermes Mistral 2.5",
+        }, {
+            "value": "cognitivecomputations/dolphin-2.5-mixtral-8x7b",
+            "label": "Dolphin Mixtral 2.5",
+        }, {
+            "value": "Gryphe/MythoMax-L2-13b",
+            "label": "MythoMax-L2-13b",
+        }, {
+            "value": "gpt-3.5-turbo-0613",
+            "label": "GPT 3.5",
+        }, {
+            "value": "teknium/OpenHermes-2-Mistral-7B",
+            "label": "OpenHermes Mistral 2",
+        }],
     )
 
     allow_backup_story_models: bool = SettingField(
@@ -1123,13 +1123,12 @@ Can include descriptions of genre, characters, specific items and locations that
         description="Use chat mode only,instead of questing",
         type="bool",
     )
-    togetherai_api_key: Optional[str] = SettingField(
-        default="",
-        label="togetherai_api_key",
-        description="togetherai_api_key",
-        type="text",
+    enable_images_in_chat: Optional[bool] = SettingField(
+        default=False,
+        label="Enable images in chat",
+        description="Enable images in chat",
+        type="bool",
     )
-
 
     @property
     def narration_voice_id(self) -> str:

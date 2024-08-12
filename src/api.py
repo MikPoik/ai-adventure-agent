@@ -41,7 +41,7 @@ from schema.server_settings import ServerSettings
 from utils.agent_service import AgentService
 from utils.context_utils import get_game_state, save_game_state, save_server_settings
 from utils.tags import TagKindExtensions
-
+from utils.context_utils import with_togetherai_key
 
 class AdventureGameService(AgentService):
     """Deployable game that runs an instance of a magical AI Adventure Game.
@@ -129,7 +129,7 @@ class AdventureGameService(AgentService):
         )
         togetherai_api_key: str = Field(
             "",
-            description="Together AI API key defined in src/schema/server_settings.py for now",
+            description="Together AI API key defined",
         )
 
 
@@ -200,7 +200,6 @@ class AdventureGameService(AgentService):
             tools=[],
             llm=function_capable_llm,
             openai_api_key=self.config.openai_api_key,
-            togetherai_api_key=self.config.togetherai_api_key
         )
 
         self.quest_agent = QuestAgent(tools=[], llm=function_capable_llm)
@@ -208,9 +207,13 @@ class AdventureGameService(AgentService):
         self.npc_agent = NpcAgent(llm=function_capable_llm)
         self.chat_agent = ChatAgent(
             tools=[],
-            llm=function_capable_llm,
-            togetherai_api_key=self.config.togetherai_api_key)
-
+            llm=function_capable_llm)
+        
+    def build_default_context(self, context_id: Optional[str] = None, **kwargs) -> AgentContext:
+        context = super().build_default_context(context_id=context_id, **kwargs)  # Ensure you pass the keyword arguments
+        context = with_togetherai_key(self.config.togetherai_api_key, context)
+        return context
+        
     def get_default_agent(self,
                           throw_if_missing: bool = True) -> Optional[Agent]:
         """Returns the active agent.
@@ -382,7 +385,7 @@ if __name__ == "__main__":
         character = parse_yaml_raw_as(HumanCharacter, yaml_string)
 
     with Steamship.temporary_workspace() as client:
-        logging.warning("client info: " + str(client.config.workspace_handle))
+        
         repl = GameREPL(
             cast(AgentService, AdventureGameService),
             agent_package_config={},

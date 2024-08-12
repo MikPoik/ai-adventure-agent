@@ -15,6 +15,7 @@ from utils.context_utils import (
     get_server_settings,
     save_game_state,
 )
+from utils.tags import QuestTag
 
 
 class StartChatQuestTool(Tool):
@@ -50,7 +51,7 @@ class StartChatQuestTool(Tool):
         kwargs["is_final"] = True
         super().__init__(**kwargs)
 
-    def start_quest(  # noqa: C901
+    def start_chat_quest(  # noqa: C901
         self,
         game_state: GameState,
         context: AgentContext,
@@ -100,7 +101,7 @@ class StartChatQuestTool(Tool):
             quest_difficulty_base, server_settings
         )
 
-        quest.name = f"{uuid.uuid4()}"
+        quest.name = QuestTag.CHAT_QUEST#f"{uuid.uuid4()}" #Always same id for chats
 
         print(
             f"Current chat quest name: {quest.name}. Current quest idx: {len(game_state.quests) - 1}."
@@ -127,7 +128,7 @@ class StartChatQuestTool(Tool):
         logging.warning("Running StartChatQuestTool")
         game_state = get_game_state(context)
 
-        self.start_quest(game_state, context)
+        self.start_chat_quest(game_state, context)
 
         player = game_state.player
 

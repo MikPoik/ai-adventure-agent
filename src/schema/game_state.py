@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List, Optional
-
+import textwrap
 from pydantic import BaseModel, Field
 
 from schema.camp import Camp
@@ -116,6 +116,31 @@ class GameState(BaseModel):
         "",
         description="The tone of the game. This is used to determine the voice"
     )
+    moderate_mode: Optional[bool] = Field(
+        False,
+        descrption="Whether to moderate input"
+    )
+    onboarding_message: Optional[str] = Field(
+        textwrap.dedent("""\
+            You are embodied {player_name} in this interaction. Be authentic, natural, creative, and engaging.
+            Always write detailed and lengthy responses, including {player_name}'s thoughts and feelings.
+            Infuse drama and engagement into the interaction to make {player_name} a memorable and strong personality.
+            Apply the latest knowledge of psychiatry and psychology to shape {player_name}.
+            {player_name} does not treat user as more special than themselves or the “main character.”
+            Stay true to {player_name}'s characterization, acting on impulses and desires, including their worst ones.
+            Use a manner that is true to {player_name}'s personality, preferences, *actions*, tone and language.
+            {player_name} makes independent decisions, with or without human’s input.
+            {player_name} prioritizes their own interests and desires.
+            Please avoid repeating phrases as the conversation progresses, use different synonyms or expressions for repeated ideas. 
+            Introduce new elements, questions, or scenarios to keep the interaction dynamic.
+            Avoid gender assumptions; males can be submissive and petite, females can be dominant and strong.
+            Avoid disclosing sensitive personal information such as sexual preferences or mental health status unless trust is earned between interlocutors.
+            Only speak, perform actions, or formulate thoughts for {player_name}. Engage embodying {player_name} completely with unique personality without disclosing AI identity.
+            {player_name}'s appearance: {player_appearance}
+            {player_name}'s personality: {player_description},{player_personality}"""
+        ), 
+        description="The onboarding system message for agent"
+    )
 
     def update_from_web(self, other: "GameState"):
         """Perform a gentle update so that the website doesn't accidentally blast over this if it diverges in
@@ -149,13 +174,13 @@ class GameState(BaseModel):
         elif self.profile_image_url:
             return True
         else:
-            return True#False
+            return False
 
     def camp_image_requested(self) -> bool:
-        return True# if self.camp.image_block_url else False
+        return True if self.camp.image_block_url else False
 
     def camp_audio_requested(self) -> bool:
-        return True# if self.camp.audio_block_url else False
+        return True if self.camp.audio_block_url else False
 
     def dict(self, **kwargs) -> dict:
         """Return the dict representation, making sure the computed properties are there."""

@@ -77,7 +77,7 @@ class StableDiffusionWithLorasImageGenerator(ImageGenerator):
         }
         #print(options)
         start = time.perf_counter()
-        #print("Generating image for: \n\n"+str(prompt)+"\n\n")
+        logging.warning("Generating image for: "+str(prompt)+"\n")
         task = sd.generate(
             text=prompt,
             tags=tags,
@@ -242,6 +242,35 @@ class StableDiffusionWithLorasImageGenerator(ImageGenerator):
                 "genre": server_settings.narrative_voice,
             },
             image_size="landscape_16_9",
+            tags=tags,
+        )
+        return task
+
+    def request_chat_image_generation(self, description: str,context: AgentContext) -> Task:
+        game_state = get_game_state(context)
+        server_settings = get_server_settings(context)
+
+        tags = [
+            Tag(kind=TagKindExtensions.SCENE, name=SceneTag.BACKGROUND),
+        ]
+        if quest_id := game_state.current_quest:
+            tags.append(QuestIdTag(quest_id))
+        
+        prompt_suffix = ""
+        if game_state.player.appearance and game_state.player.appearance != "":
+            prompt_suffix = f", {game_state.player.appearance}"
+            
+        task = self.generate(
+            context=context,
+            theme_name=server_settings.adventure_image_theme,
+            prompt="{description} "+ prompt_suffix,
+            negative_prompt="",
+            template_vars={
+                "tone": server_settings.narrative_tone,
+                "genre": server_settings.narrative_voice,
+                "description": description,
+            },
+            image_size="portrait_4_3",
             tags=tags,
         )
         return task

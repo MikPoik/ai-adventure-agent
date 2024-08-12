@@ -23,6 +23,7 @@ from utils.context_utils import (
 )
 from utils.error_utils import record_and_throw_unrecoverable_error
 from utils.tags import QuestIdTag
+from utils.moderation_utils import mark_block_as_excluded
 
 
 def build_context_appending_emit_func(
@@ -493,7 +494,10 @@ class AgentService(PackageService):
         if game_state.current_quest:
             base_tags.append(QuestIdTag(game_state.current_quest))
 
-        context.chat_history.append_user_message(prompt, tags=base_tags)
+        user_block = context.chat_history.append_user_message(prompt, tags=base_tags)
+        if user_block.text == "":
+            mark_block_as_excluded(user_block)
+            
         agent: Optional[Agent] = self.get_default_agent()
         self.run_agent(agent, context)
 

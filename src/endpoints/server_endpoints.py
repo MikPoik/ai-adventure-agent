@@ -57,7 +57,9 @@ class ServerSettingsMixin(PackageMixin):
         try:
             context = self.agent_service.build_default_context()
             server_settings = get_server_settings(context)
+            logging.warning(f"PATCH /patch_server_settings {kwargs}")
             for k, v in kwargs.items():
+                logging.warning(f"Updating server_settings attribute {k} from {getattr(server_settings, k, 'NOT SET')} to {v}")
                 setattr(server_settings, k, v)
             save_server_settings(server_settings, context)
             return server_settings.dict()

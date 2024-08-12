@@ -2,7 +2,7 @@ import logging
 import time
 from typing import Optional
 
-from steamship import Steamship, SteamshipError
+from steamship import Steamship, SteamshipError,Tag
 from steamship.agents.service.agent_service import AgentService
 from steamship.invocable import post
 from steamship.invocable.package_mixin import PackageMixin
@@ -15,6 +15,7 @@ from schema.game_state import ActiveMode
 from utils.context_utils import RunNextAgentException, get_game_state, save_game_state
 from utils.error_utils import record_and_throw_unrecoverable_error
 from utils.generation_utils import generate_story_intro
+from utils.tags import QuestIdTag, SceneTag, TagKindExtensions,StoryContextTag,CharacterTag,InstructionsTag,QuestTag
 
 
 class OnboardingMixin(PackageMixin):
@@ -23,7 +24,6 @@ class OnboardingMixin(PackageMixin):
     agent_service: AgentService
     client: Steamship
     openai_api_key: str
-    togetherai_api_key: str
 
     def __init__(
         self, client: Steamship, agent_service: AgentService, openai_api_key: str
@@ -31,7 +31,6 @@ class OnboardingMixin(PackageMixin):
         self.client = client
         self.agent_service = agent_service
         self.openai_api_key = openai_api_key
-        self.togetherai_api_key = ""
 
     @post("/set_character_name")
     def set_character_name(self, name: str, **kwargs):
@@ -115,30 +114,31 @@ class OnboardingMixin(PackageMixin):
                 raise SteamshipError(
                     "Unable to complete onboarding: player background was None"
                 )
-
+            
             # These fields must pass validation for the game to continue without later problems.
             # If they don't pass validation, then we should fail early.
             # TODO: streamline for mass validation ?
-            moderation_start = time.perf_counter()
-            if not _is_allowed_by_moderation(
-                game_state.player.name, self.openai_api_key
-            ):
-                raise SteamshipError(
-                    "Supplied 'name' was rejected by game's moderation filter. Please try again."
-                )
-            if not _is_allowed_by_moderation(
-                game_state.player.background, self.openai_api_key
-            ):
-                raise SteamshipError(
-                    "Supplied 'background' was rejected by game's moderation filter. Please try again."
-                )
-            if not _is_allowed_by_moderation(
-                game_state.player.description, self.openai_api_key
-            ):
-                raise SteamshipError(
-                    "Supplied 'description' was rejected by game's moderation filter. Please try again."
-                )
-            logging.debug(f"Moderation time: {time.perf_counter() - moderation_start}")
+            if game_state.moderate_mode:
+                moderation_start = time.perf_counter()
+                if not _is_allowed_by_moderation(
+                    game_state.player.name, self.openai_api_key
+                ):
+                    raise SteamshipError(
+                        "Supplied 'name' was rejected by game's moderation filter. Please try again."
+                    )
+                if not _is_allowed_by_moderation(
+                    game_state.player.background, self.openai_api_key
+                ):
+                    raise SteamshipError(
+                        "Supplied 'background' was rejected by game's moderation filter. Please try again."
+                    )
+                if not _is_allowed_by_moderation(
+                    game_state.player.description, self.openai_api_key
+                ):
+                    raise SteamshipError(
+                        "Supplied 'description' was rejected by game's moderation filter. Please try again."
+                    )
+                logging.debug(f"Moderation time: {time.perf_counter() - moderation_start}")
 
             if game_state.active_mode != ActiveMode.ONBOARDING:
                 raise SteamshipError(
@@ -173,7 +173,7 @@ class OnboardingMixin(PackageMixin):
             record_and_throw_unrecoverable_error(e, context)
 
     @post("init_companion_chat")
-    def init_companion_chat(self,name:str,description:str = ".",personality:str = ".",appearance:str = ".",background:str = ".", **kwargs) -> bool:
+    def init_companion_chat(self,name:str,description:str = ".",personality:str = ".",appearance:str = ".",background:str = ".",seed:str ="", **kwargs) -> bool:
         try:
             if personality == "":
                 personality = "N/A"
@@ -195,7 +195,7 @@ class OnboardingMixin(PackageMixin):
             
             if not game_state.onboarding_agent_has_completed:
                 self.onboarding_agent = OnboardingAgent(
-                    client=self.client, tools=[], openai_api_key=self.openai_api_key,togetherai_api_key=self.togetherai_api_key
+                    client=self.client, tools=[], openai_api_key=self.openai_api_key
                 )
                 self.onboarding_agent.run(context)
                 return True
@@ -207,3 +207,65 @@ class OnboardingMixin(PackageMixin):
             logging.error(e)
             context = self.agent_service.build_default_context()
             record_and_throw_unrecoverable_error(e, context)
+
+    
+    @post("append_onboarding_message")
+    def append_onboarding_message(self, message: str, **kwargs) -> bool:
+        try:            
+            context = self.agent_service.build_default_context()
+            game_state = get_game_state(context)
+            onboarding_message = game_state.onboarding_message.format(
+                player_name=game_state.player.name,
+                player_description=game_state.player.description,
+                player_appearance=game_state.player.appearance,
+                player_personality=game_state.player.personality)
+            context.chat_history.append_system_message(
+                text=onboarding_message,
+                tags=[
+                    Tag(
+                        kind=TagKindExtensions.INSTRUCTIONS,
+                        name=InstructionsTag.ONBOARDING,
+                    ),
+                    Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.NAME),
+                    Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.BACKGROUND),
+                    Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.MOTIVATION),
+                    Tag(
+                        kind=TagKindExtensions.CHARACTER, name=CharacterTag.DESCRIPTION
+                    ),
+                    Tag(
+                        kind=TagKindExtensions.STORY_CONTEXT,
+                        name=StoryContextTag.BACKGROUND,
+                    ),
+                    Tag(
+                        kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.TONE
+                    ),
+                    Tag(
+                        kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.VOICE
+                    ),
+                ],
+            )
+            if game_state.player.seed_message and game_state.player.seed_message != "":                
+                context.chat_history.append_assistant_message(
+                    text=game_state.player.seed_message,
+                    tags=[                       
+                        Tag(
+                            kind=TagKindExtensions.CHARACTER,
+                            name=CharacterTag.SEED,
+                        ),
+                        Tag(kind=TagKindExtensions.CHARACTER,
+                            name=CharacterTag.INTRODUCTION),
+                        Tag(
+                            kind=TagKindExtensions.CHARACTER,
+                            name=CharacterTag.INTRODUCTION_PROMPT,
+                        ),
+                        QuestIdTag(QuestTag.CHAT_QUEST)
+                        ],
+
+
+
+                )
+            return True
+        except BaseException as e:
+            context = self.agent_service.build_default_context()
+            record_and_throw_unrecoverable_error(e, context)
+            return False

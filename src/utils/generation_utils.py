@@ -83,7 +83,7 @@ def send_agent_status_message(name: AgentStatusMessageTag,
 
     
 def send_story_generation(prompt: str, quest_name: str,
-                          context: AgentContext) -> Optional[Block]:
+                          context: AgentContext, additional_context: Optional[str] = None) -> Optional[Block]:
     """Generates and sends a background image to the player."""
     #user_block = send_user_message(context,quest_name)
     filter=UnionFilter([
@@ -103,6 +103,7 @@ def send_story_generation(prompt: str, quest_name: str,
     block = do_token_trimmed_generation(
         context,
         prompt,
+        additional_context,
         prompt_tags=[
             Tag(kind=TagKindExtensions.QUEST, name=QuestTag.QUEST_PROMPT),
             QuestIdTag(quest_name),
@@ -128,7 +129,7 @@ def send_story_generation(prompt: str, quest_name: str,
         generation_for="Quest Content",
         stop_tokens=["\n", "</s>", "<|im_end|>", "<|im_start|>"],
     )
-    #log_filtered_blocks(context, filter, "Quest Content Generation")
+    #log_filtered_blocks(context, filter, "Quest Content")
     return block
 
 
@@ -401,10 +402,11 @@ def generate_story_intro(player: HumanCharacter, context: AgentContext) -> str:
 def do_token_trimmed_generation(
     context: AgentContext,
     prompt: str,
-    prompt_tags: List[Tag],
-    output_tags: List[Tag],
-    filter: ChatHistoryFilter,
-    generation_for: str,  # For debugging output
+    additional_context: Optional[str] = None,
+    prompt_tags: List[Tag] = [],
+    output_tags: List[Tag] = [],
+    filter: ChatHistoryFilter = None,
+    generation_for: str = "Generic",  # For debugging output
     stop_tokens: Optional[List[str]] = None,
     new_file: bool = False,
     streaming: bool = True,
@@ -417,6 +419,7 @@ def do_token_trimmed_generation(
     block = do_generation(
         context,
         prompt,
+        additional_context,
         prompt_tags=prompt_tags,
         output_tags=output_tags,
         filter=TrimmingStoryContextFilter(
@@ -436,6 +439,7 @@ def do_token_trimmed_generation(
 def do_generation(
     context: AgentContext,
     prompt: str,
+    additional_context: Optional[str],
     prompt_tags: List[Tag],
     output_tags: List[Tag],
     filter: ChatHistoryFilter,
@@ -459,16 +463,23 @@ def do_generation(
         Tag(kind=TagKind.CHAT, name="streamed-to-chat-history"),
     ])
 
-    prompt_block = context.chat_history.append_system_message(
-        text=prompt,
-        tags=prompt_tags,
-    )
+    prompt_block = None
+    #Add only if in chat_mode and not generating for story
+    if not "Quest Content" in generation_for or additional_context:
+        #logging.warning(f"additinal_context, append message, generation for: {generation_for}")
+        prompt_block = context.chat_history.append_system_message(
+            text=prompt,
+            tags=prompt_tags,
+        )
     # Intentionally reuse the filtering for the quest CONTENT
     block_indices = filter.filter_chat_history(
         chat_history_file=context.chat_history.file, filter_for=generation_for)
-
-    if prompt_block.index_in_file not in block_indices:
-        block_indices.append(prompt_block.index_in_file)
+    
+    #Add only if in chat_mode and not generating for story
+    if not "Quest Content" in generation_for or additional_context:
+        #logging.warning(f"additinal_context, append indices, generation for {generation_for}")
+        if prompt_block and prompt_block.index_in_file not in block_indices:
+            block_indices.append(prompt_block.index_in_file)
 
     options = {}
     if stop_tokens:
@@ -479,7 +490,7 @@ def do_generation(
     # don't pollute workspace with temporary/working files that contain data like: "LIKELY"
     append_output_to_file = False if not output_file_id else True
 
-    logging.debug( f"current prompt({prompt_block.index_in_file}, {tokens(prompt_block)}): {prompt}")
+    #logging.warning( f"current prompt({prompt_block.index_in_file}, {tokens(prompt_block)}): {prompt}")
     logging.debug(f"selected blocks: {sorted(block_indices)}")
 
     task = generator.generate(

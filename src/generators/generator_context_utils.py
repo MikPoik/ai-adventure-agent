@@ -1,5 +1,5 @@
 from typing import Optional
-
+import logging
 from steamship.agents.schema import AgentContext
 
 from generators.image_generator import ImageGenerator
@@ -11,6 +11,7 @@ from generators.social_media_generator import SocialMediaGenerator
 from utils.context_utils import get_server_settings, get_theme
 
 _CAMP_IMAGE_GENERATOR_KEY = "camp-image-generator"
+_CHAT_IMAGE_GENERATOR_KEY = "chat-image-generator"
 _QUEST_BACKGROUND_IMAGE_GENERATOR_KEY = "quest-background-image-generator"
 _ITEM_IMAGE_GENERATOR_KEY = "item-image-generator"
 _PROFILE_IMAGE_GENERATOR_KEY = "profile-image-generator"
@@ -28,7 +29,19 @@ def get_camp_image_generator(context: AgentContext) -> Optional[ImageGenerator]:
         context.metadata[_CAMP_IMAGE_GENERATOR_KEY] = generator
 
     return generator
-
+    
+def get_chat_image_generator(
+    context: AgentContext,
+) -> Optional[ImageGenerator]:
+    #logging.warning("get_chat_background_image_generator")
+    generator = context.metadata.get(_CHAT_IMAGE_GENERATOR_KEY)
+    if not generator:
+        # Lazily create
+        server_settings = get_server_settings(context)
+        theme = get_theme(server_settings.quest_background_theme, context)
+        generator = get_image_generator(theme)
+        context.metadata[_CHAT_IMAGE_GENERATOR_KEY] = generator
+    return generator
 
 def get_quest_background_image_generator(
     context: AgentContext,

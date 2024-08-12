@@ -42,7 +42,7 @@ class ChatHistoryFilter(ABC):
             debug_messages.append(
                 f"{block.index_in_file} [{inclusion_reason}] ({block.chat_role}) {block.text}"
             )
-        logging.debug("\n".join(debug_messages))
+        #logging.warning("\nChatHistoryFilter results:\n".join(debug_messages))
         return list(
             {filtered_block[0].index_in_file for filtered_block in filtered_blocks}
         )
@@ -59,9 +59,10 @@ class TagFilter(ChatHistoryFilter):
     ) -> List[Tuple[Block, Optional[str]]]:
         result: List[Tuple[Block, Optional[str]]] = []
         for block in chat_history_file.blocks:
+            #logging.warning(f"BLOCK {block.text}, {block.chat_role}")
             for tag in block.tags:
                 for kind, name in self.tag_types:
-                    if tag.kind == kind and tag.name == name:
+                    if tag.kind == kind and tag.name == name:                       
                         result.append((block, f"{tag.kind} {tag.name}"))
         return result
 

@@ -1,7 +1,7 @@
 {
 	"type": "package",
 	"handle": "ai-adventure-test",
-	"version": "2.2.53-rc16",
+	"version": "2.2.53-rc23",
 	"description": "",
 	"author": "",
 	"entrypoint": "Unused",
@@ -16,7 +16,7 @@
 			".pythonlibs",
 			".git",
 			".config",
-			".local"			
+			".local"
 		]
 	},
 	"configTemplate": {
@@ -37,7 +37,7 @@
 		},
 		"togetherai_api_key": {
 			"type": "string",
-			"description": "Together AI API key defined in src/schema/server_settings.py for now",
+			"description": "Together AI API key defined",
 			"default": ""
 		}
 	},

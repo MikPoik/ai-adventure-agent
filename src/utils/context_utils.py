@@ -42,6 +42,11 @@ _BACKGROUND_MUSIC_GENERATOR_KEY = "background-music-generator"
 _NARRATION_GENERATOR_KEY = "narration-generator"
 _SERVER_SETTINGS_KEY = "server-settings"
 _GAME_STATE_KEY = "user-settings"
+_TOGETHERAI_API_KEY = "togetherai-api-key"
+
+def with_togetherai_key(api_key: str, context: AgentContext) -> AgentContext:
+    context.metadata[_TOGETHERAI_API_KEY] = api_key
+    return context
 
 
 def with_function_capable_llm(instance: ChatLLM,
@@ -62,7 +67,7 @@ def with_game_state(
         game_state: "GameState",
         context: AgentContext  # noqa: F821
 ) -> "AgentContext":  # noqa: F821
-    context.metadata[_GAME_STATE_KEY+context.id] = game_state
+    context.metadata[_GAME_STATE_KEY] = game_state
     return context
 
 
@@ -77,14 +82,18 @@ def get_story_text_generator(
         game_state = get_game_state(context)
         preferences = game_state.preferences
 
-        open_ai_models = ["gpt-3.5-turbo", "gpt-4-1106-preview", "gpt-4"]
+        open_ai_models = ["gpt-3.5-turbo", "gpt-4-1106-preview", "gpt-4","gpt-3.5-turbo-0613"]
         replicate_models = ["dolly_v2", "llama_v2"]
         together_ai_models = [
             "NousResearch/Nous-Hermes-2-Yi-34B",
             "NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",
             "NousResearch/Nous-Hermes-2-Mixtral-8x7B-SFT",
             "mistralai/Mixtral-8x7B-Instruct-v0.1",
-            "teknium/OpenHermes-2p5-Mistral-7B"
+            "teknium/OpenHermes-2p5-Mistral-7B",
+            "cognitivecomputations/dolphin-2.5-mixtral-8x7b",
+            "Gryphe/MythoMax-L2-13b",
+            "gpt-3.5-turbo-0613",
+            "teknium/OpenHermes-2-Mistral-7B"
         ]
 
         model_name = server_settings._select_model(
@@ -98,7 +107,7 @@ def get_story_text_generator(
             "temperature": server_settings.default_story_temperature,
         }
         plugin_handle = None
-        version = None
+        version = None        
         
         if model_name in open_ai_models:
             plugin_handle = "gpt-4"
@@ -108,10 +117,9 @@ def get_story_text_generator(
             plugin_handle = "together-ai-generator"
             version = "1.0.2"
             config[
-                "api_key"] = server_settings.togetherai_api_key #in server settings for now untill we have a better way to do this
-
+                "api_key"] = context.metadata[_TOGETHERAI_API_KEY]
         
-        logging.warning("model: " + model_name)
+        #logging.warning("model: " + model_name)
         #logging.warning("plugin_handle: " + plugin_handle)
         generator = context.client.use_plugin(plugin_handle,
                                               config=config,
@@ -127,8 +135,7 @@ def get_story_text_generator(
                     config={
                         "model": backup_model_name,
                         "max_tokens": server_settings.default_story_max_tokens,
-                        "temperature": server_settings.
-                        default_story_temperature
+                        "temperature": server_settings.default_story_temperature
                     })
                 providers.append(provider)
             generator = CascadingPlugin(instance_providers=providers)
@@ -458,9 +465,10 @@ def await_ask(
 
     # Make sure question is List[Block]
     if isinstance(question, str):
-        output = [Block(text=question, tags=base_tags)]
+        output = [Block(text=question, tags=base_tags)]        
         mark_block_as_excluded(output[0]) #Dont save add question blocks to prompt
     else:
+        mark_block_as_excluded(question[0])
         for block in question:
             if not block.tags:
                 block.tags = []
