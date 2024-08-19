@@ -29,7 +29,10 @@ class ImageTheme(BaseModel):
         description=
         'Either (1) dall-e-3 or dall-e-2, or (2) URL or HuggingFace ID of the base model to generate the image. Examples: "stabilityai/stable-diffusion-xl-base-1.0", "runwayml/stable-diffusion-v1-5", "SG161222/Realistic_Vision_V2.0". ',
     )
-
+    custom_generate: bool = Field(
+        False,
+        description="Whether custom generation without themes"
+    )
     def make_prompt(self, prompt: str, prompt_params: Optional[dict] = None):
         """Applies the included suffixes and then interpolates any {referenced} variables."""
         template = f"{self.prompt_prefix or ''} {prompt} {self.prompt_suffix or ''}"
@@ -38,6 +41,11 @@ class ImageTheme(BaseModel):
     @property
     def is_dalle(self):
         return self.model in ["dall-e-2", "dall-e-3"]
+
+    @property
+    def is_custom_generator(self):
+        return self.custom_generate
+
 
 
 class DalleTheme(ImageTheme):
@@ -178,33 +186,159 @@ class StableDiffusionTheme(ImageTheme):
         """Applies the included suffixes and then interpolates any {referenced} variables."""
         template = f"{self.negative_prompt_prefix or ''}{negative_prompt}{self.negative_prompt_suffix or ''}"
         return safe_format(template, prompt_params or {})
+        
+class CustomStableDiffusionTheme(StableDiffusionTheme):
+    provider: str = Field(
+        "fal_ai",
+        description="Theme generation provider"
+    )
+
+class GetImgTheme(StableDiffusionTheme):
+    width: int = Field(
+        512,
+        description="image width"
+    )
+    height: int = Field(
+        512,
+        description="image height"
+    )
 
 
-OMNIGEN_SDXL_NSFW = StableDiffusionTheme(
+REALISTIC_VISION_V3 = GetImgTheme(
+    name="realistic_vision_v3",
+    model="realistic-vision-v3",
+    width=512,
+    height=768,
+    negative_prompt_prefix="missing limbs, worst quality, close-up",
+    custom_generate=True
+    
+)
+OMNIGEN_SDXL_NSFW = CustomStableDiffusionTheme(
     name="omnigen_sdxl_nsfw",
     prompt_prefix="",
     model=
     "https://civitai.com/api/download/models/228559?type=Model&format=SafeTensor&size=pruned&fp=fp16",
     model_architecture="sdxl",
-    negative_prompt_prefix="missing limbs, worst quality,close-up",
-    num_inference_steps=25,
-    guidance_scale=6,
-    clip_skip=0,
-    scheduler="DPM++ 2M SDE Karras")
-COLOSSUS_SDXL_NSFW = StableDiffusionTheme(
-    name="colossus_sdxl_nsfw",
+    negative_prompt_prefix="missing limbs, worst quality, close-up",
+    num_inference_steps=30,
+    guidance_scale=7,
+    clip_skip=2,
+    scheduler="DPM++ 2M Karras",
+    image_size="portrait_4_3",
+    custom_generate=True)
+
+INIVERSE_MIX_SDXL_NSFW = CustomStableDiffusionTheme(
+    name="iniverse_mix_sdxl_nsfw",
     prompt_prefix="",
     model=
-    "https://civitai.com/api/download/models/228559?type=Model&format=SafeTensor&size=pruned&fp=fp16",
+    "https://civitai.com/api/download/models/294706",
     model_architecture="sdxl",
-    negative_prompt_prefix="missing limbs, worst quality,close-up",
-    num_inference_steps=25,
-    guidance_scale=6,
-    loras=[
-        "https://civitai.com/api/download/models/160240?type=Model&format=SafeTensor"
-    ],
-    clip_skip=0,
-    scheduler="DPM++ 2M SDE Karras")
+    negative_prompt_prefix="missing limbs, worst quality, close-up",
+    num_inference_steps=30,
+    guidance_scale=7,
+    clip_skip=2,
+    scheduler="DPM++ 2M Karras",
+    image_size="portrait_4_3",
+    custom_generate=True
+)
+
+ALBEDO_SDXL_NSFW = CustomStableDiffusionTheme(
+    name="albedo_sdxl_nsfw",
+    prompt_prefix="",
+    model=
+    "https://civitai.com/api/download/models/281176?type=Model&format=SafeTensor&size=pruned&fp=fp16",
+    model_architecture="sdxl",
+    negative_prompt_prefix="missing limbs, worst quality, close-up",
+    num_inference_steps=30,
+    guidance_scale=7,
+    clip_skip=2,
+    scheduler="DPM++ 2M Karras",
+    image_size="portrait_4_3",
+    custom_generate=True)
+
+ANYTHINGXL_SDXL_NSFW = CustomStableDiffusionTheme(
+    name="anythingxl_sdxl_nsfw",
+    prompt_prefix="",
+    model=
+    "https://civitai.com/api/download/models/384264?type=Model&format=SafeTensor&size=full&fp=fp16",
+    model_architecture="sdxl",
+    negative_prompt_prefix="missing limbs, worst quality, close-up",
+    num_inference_steps=30,
+    guidance_scale=7,
+    clip_skip=2,
+    scheduler="DPM++ 2M Karras",
+    image_size="portrait_4_3",
+    custom_generate=True)
+
+ANIMAGINE_SDXL_NSFW = CustomStableDiffusionTheme(
+    name="animagine_sdxl_nsfw",
+    prompt_prefix="",
+    model=
+    "https://civitai.com/api/download/models/293564?type=Model&format=SafeTensor&size=full&fp=fp32",
+    model_architecture="sdxl",
+    negative_prompt_prefix="missing limbs, worst quality, close-up",
+    num_inference_steps=30,
+    guidance_scale=7,
+    clip_skip=2,
+    scheduler="DPM++ 2M Karras",
+    image_size="portrait_4_3",
+    custom_generate=True)
+
+CLEARHUNG_ANIME_SDXL_NSFW = CustomStableDiffusionTheme(
+    name="clearhung_anime_sdxl_nsfw",
+    prompt_prefix="",
+    model=
+    "https://civitai.com/api/download/models/156375",
+    model_architecture="sdxl",
+    negative_prompt_prefix="missing limbs, worst quality, close-up",
+    num_inference_steps=30,
+    guidance_scale=7,
+    clip_skip=2,
+    scheduler="DPM++ 2M Karras",
+    image_size="portrait_4_3",
+    custom_generate=True)
+
+HASSAKU_SDXL_NSFW = CustomStableDiffusionTheme(
+    name="hassaku_sdxl_nsfw",
+    prompt_prefix="",
+    model=
+    "https://civitai.com/api/download/models/378499",
+    model_architecture="sdxl",
+    negative_prompt_prefix="missing limbs, worst quality, close-up",
+    num_inference_steps=30,
+    guidance_scale=7,
+    clip_skip=2,
+    scheduler="DPM++ 2M Karras",
+    image_size="portrait_4_3",
+    custom_generate=True)
+
+ANIMEMIX_SDXL_NSFW = CustomStableDiffusionTheme(
+    name="animemix_sdxl_nsfw",
+    prompt_prefix="",
+    model=
+    "https://civitai.com/api/download/models/303526?type=Model&format=SafeTensor&size=full&fp=fp16",
+    model_architecture="sdxl",
+    negative_prompt_prefix="missing limbs, worst quality, close-up",
+    num_inference_steps=30,
+    guidance_scale=7,
+    clip_skip=2,
+    scheduler="DPM++ 2M Karras",
+    image_size="portrait_4_3",
+    custom_generate=True)
+
+DEEPHENTAI_SDXL_NSFW = CustomStableDiffusionTheme(
+    name="deephentai_sdxl_nsfw",
+    prompt_prefix="",
+    model=
+    "https://civitai.com/api/download/models/286821",
+    model_architecture="sdxl",
+    negative_prompt_prefix="missing limbs, worst quality, close-up",
+    num_inference_steps=30,
+    guidance_scale=7,
+    clip_skip=2,
+    scheduler="DPM++ 2M Karras",
+    image_size="portrait_4_3",
+    custom_generate=True)
 
 REALISTIC_VISION = StableDiffusionTheme(
     name="realistic_vision",
@@ -220,18 +354,6 @@ REALISTIC_VISION = StableDiffusionTheme(
     clip_skip=0,
 )
 
-ORANGEABYSS_THEME = StableDiffusionTheme(
-    name="orange_abyss",
-    prompt_prefix="",
-    model=
-    "https://civitai.com/api/download/models/5038?type=Model&format=SafeTensor&size=full&fp=fp16",
-    model_architecture="sd",
-    negative_prompt_prefix="(worst quality, low quality, normal quality:2)",
-    num_inference_steps=20,
-    guidance_scale=6,
-    scheduler="DPM++ 2M SDE Karras",
-    clip_skip=2,
-)
 
 # Pixel Art XL (https://civitai.com/models/120096/pixel-art-xl) by https://civitai.com/user/NeriJS
 PIXEL_ART_THEME_1 = StableDiffusionTheme(
@@ -366,7 +488,17 @@ PREMADE_THEMES = [
     CINEMATIC_ANIMATION, EPIC_REALISM, SD_XL_NO_LORAS, DALL_E_3_NATURAL_HD,
     DALL_E_3_NATURAL_STANDARD, DALL_E_3_VIVID_HD, DALL_E_3_VIVID_STANDARD,
     DALL_E_2_STANDARD, DALL_E_2_STELLAR_DREAMS, DALL_E_2_NEON_CYBERPUNK,
-    REALISTIC_VISION, OMNIGEN_SDXL_NSFW, COLOSSUS_SDXL_NSFW, ORANGEABYSS_THEME
+    REALISTIC_VISION, 
+    OMNIGEN_SDXL_NSFW, 
+    CLEARHUNG_ANIME_SDXL_NSFW,
+    ANIMAGINE_SDXL_NSFW,
+    ANIMEMIX_SDXL_NSFW,
+    ALBEDO_SDXL_NSFW,
+    INIVERSE_MIX_SDXL_NSFW,
+    HASSAKU_SDXL_NSFW,
+    DEEPHENTAI_SDXL_NSFW,
+    ANYTHINGXL_SDXL_NSFW,
+    REALISTIC_VISION_V3
 ]
 
-DEFAULT_THEME = ORANGEABYSS_THEME
+DEFAULT_THEME = ALBEDO_SDXL_NSFW

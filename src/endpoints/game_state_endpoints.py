@@ -58,3 +58,19 @@ class GameStateMixin(PackageMixin):
         gs.player.energy = gs.player.energy + amount
         save_game_state(gs, context)
         return gs.dict()
+
+@post("/patch_game_state")
+def patch_game_state(self, **kwargs) -> dict:
+    """Set the server settings -- only applying updates contained in kwargs."""
+    try:
+        context = self.agent_service.build_default_context()
+        game_state = get_game_state(context)
+        logging.warning(f"PATCH /patch_game_state {kwargs}")
+        for k, v in kwargs.items():
+            logging.warning(f"Updating server_settings attribute {k} from {getattr(game_state, k, 'NOT SET')} to {v}")
+            setattr(game_state, k, v)
+        save_game_state(game_state, context)
+        return game_state.dict()
+    except BaseException as e:
+        logging.exception(e)
+        raise e

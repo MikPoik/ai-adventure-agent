@@ -3,10 +3,20 @@ from generators.image_generators.dalle import DalleImageGenerator
 from generators.image_generators.stable_diffusion_with_loras import (
     StableDiffusionWithLorasImageGenerator,
 )
-from schema.image_theme import ImageTheme
-
+from generators.image_generators.custom_stable_diffusion_with_loras import (
+    CustomStableDiffusionWithLorasImageGenerator,
+)
+from generators.image_generators.get_img_ai import (
+    GetimgAiImageGenerator,
+)
+from schema.image_theme import CustomStableDiffusionTheme, GetImgTheme, ImageTheme
+import logging
 
 def get_image_generator(theme: ImageTheme) -> ImageGenerator:
     if theme.is_dalle:
         return DalleImageGenerator()
+    elif isinstance(theme, CustomStableDiffusionTheme):
+        return CustomStableDiffusionWithLorasImageGenerator()
+    elif isinstance(theme, GetImgTheme):
+        return GetimgAiImageGenerator()
     return StableDiffusionWithLorasImageGenerator()

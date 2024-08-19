@@ -5,7 +5,7 @@ import textwrap
 import time
 from typing import Any, Dict, List, Optional, Type, Union, cast
 
-from pydantic import Field
+from pydantic import Field, fields
 from pydantic_yaml import parse_yaml_raw_as
 from steamship import Steamship, SteamshipError
 from steamship.agents.llms.openai import ChatOpenAI
@@ -39,9 +39,9 @@ from schema.characters import HumanCharacter
 from schema.game_state import ActiveMode
 from schema.server_settings import ServerSettings
 from utils.agent_service import AgentService
-from utils.context_utils import get_game_state, save_game_state, save_server_settings
+from utils.context_utils import get_game_state, get_server_settings, save_game_state, save_server_settings
 from utils.tags import TagKindExtensions
-from utils.context_utils import with_togetherai_key
+from utils.context_utils import with_togetherai_key,with_falai_key,with_getimg_ai_key
 
 class AdventureGameService(AgentService):
     """Deployable game that runs an instance of a magical AI Adventure Game.
@@ -131,6 +131,27 @@ class AdventureGameService(AgentService):
             "",
             description="Together AI API key defined",
         )
+        falai_api_key: str = Field(
+            "",
+            description="Falai API key defined",
+        )
+        getimg_ai_api_key: str = Field(
+            "key-",
+            description="GetImg AI API key defined",
+        )
+        chat_mode: bool = Field(
+            True,
+            description="Use chat mode instead of default questing"
+        )
+        enable_images_in_chat:bool = Field(
+            False,
+            description="Enable images in chat mode"
+        )
+        auto_start_chat_mode:bool = Field(
+            True,
+            description="Auto start chat mode after onboarding"
+        )
+
 
 
     config: BasicAgentServiceConfig
@@ -212,6 +233,13 @@ class AdventureGameService(AgentService):
     def build_default_context(self, context_id: Optional[str] = None, **kwargs) -> AgentContext:
         context = super().build_default_context(context_id=context_id, **kwargs)  # Ensure you pass the keyword arguments
         context = with_togetherai_key(self.config.togetherai_api_key, context)
+        context = with_falai_key(self.config.falai_api_key, context)
+        context = with_getimg_ai_key(self.config.getimg_ai_api_key,context)
+        if self.config.chat_mode:
+            server_settings = get_server_settings(context)
+            server_settings.chat_mode = self.config.chat_mode
+            server_settings.enable_images_in_chat = self.config.enable_images_in_chat
+
         return context
         
     def get_default_agent(self,
@@ -385,7 +413,6 @@ if __name__ == "__main__":
         character = parse_yaml_raw_as(HumanCharacter, yaml_string)
 
     with Steamship.temporary_workspace() as client:
-        
         repl = GameREPL(
             cast(AgentService, AdventureGameService),
             agent_package_config={},

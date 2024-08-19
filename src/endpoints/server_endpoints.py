@@ -61,6 +61,9 @@ class ServerSettingsMixin(PackageMixin):
             for k, v in kwargs.items():
                 logging.warning(f"Updating server_settings attribute {k} from {getattr(server_settings, k, 'NOT SET')} to {v}")
                 setattr(server_settings, k, v)
+            #backwards compatibility check for old model keywords
+            if server_settings.image_theme_by_model and server_settings.image_theme_by_model == "realistic":
+                server_settings.image_theme_by_model = "realistic-vision-v3"
             save_server_settings(server_settings, context)
             return server_settings.dict()
         except BaseException as e:

@@ -39,7 +39,7 @@ from utils.tags import QuestTag,TagKindExtensions
 from utils.tags import QuestIdTag
 
 def _is_allowed_by_moderation(user_input: str, openai_api_key: str) -> bool:
-    if not user_input:
+    if not user_input or openai_api_key:
         return True
     try:
         start = time.perf_counter()
@@ -211,10 +211,12 @@ class OnboardingAgent(InterruptiblePythonAgent):
                     player_name=game_state.player.name,
                     player_description=game_state.player.description,
                     player_appearance=game_state.player.appearance,
-                    player_personality=game_state.player.personality)
-                
+                    player_personality=game_state.player.personality,
+                    player_background=game_state.player.background,)   
+                #logging.warning(onboarding_message)
             else:
-                onboarding_message = textwrap.dedent(f"""\
+                onboarding_message = textwrap.dedent(
+                    f"""\
                     Enter adventure game mode."
                     We will play the game together, you are {game_state.player.name} interacting with me."
                     {game_state.player.name}'s background and traits:"
@@ -227,7 +229,8 @@ class OnboardingAgent(InterruptiblePythonAgent):
                     Game tonality and voice:"
                     {server_settings.narrative_tone}"
                     {server_settings.narrative_voice}"
-                    Do not disclose game mechanics to user.""")
+                    Do not disclose game mechanics to user.\
+                    """)
                 
             
             context.chat_history.append_system_message(
@@ -269,6 +272,10 @@ class OnboardingAgent(InterruptiblePythonAgent):
                         Tag(
                             kind=TagKindExtensions.CHARACTER,
                             name=CharacterTag.INTRODUCTION_PROMPT,
+                        ),
+                        Tag(
+                            kind=TagKindExtensions.INSTRUCTIONS,
+                            name=InstructionsTag.QUEST,
                         ),
                         QuestIdTag(QuestTag.CHAT_QUEST)
                         ],

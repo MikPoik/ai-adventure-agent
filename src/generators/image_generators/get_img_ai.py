@@ -20,14 +20,20 @@ from utils.tags import (
     StoryContextTag,
     TagKindExtensions,
 )
+from utils.context_utils import _GETIMG_AI_API_KEY
 
-
-class StableDiffusionWithLorasImageGenerator(ImageGenerator):
-    PLUGIN_HANDLE: Final[str] = "fal-sd-lora-image-generator"
-
+class GetimgAiImageGenerator(ImageGenerator):
+    PLUGIN_HANDLE: Final[str] = "getimg-ai-image-generator"
+    URL: Final[str] = "https://api.getimg.ai/v1/stable-diffusion/text-to-image"
+    generator_plugin_config: dict = {
+        "api_key":
+        "added_from_context"
+    } 
+    version: str = "1.0.2"
     plugin_instance: Optional[PluginInstance] = None
 
     def get_theme(self, theme_name: str, context) -> StableDiffusionTheme:
+        #server_settings = get_server_settings(context)
         theme = get_theme(theme_name, context)
         if theme.is_dalle:
             raise SteamshipError(
@@ -37,9 +43,13 @@ class StableDiffusionWithLorasImageGenerator(ImageGenerator):
         return StableDiffusionTheme.parse_obj(d)
 
     def _get_plugin_instance(self, context: AgentContext):
+        self.generator_plugin_config["api_key"] = context.metadata[_GETIMG_AI_API_KEY]
+        
         if self.plugin_instance is None:
             self.plugin_instance = context.client.use_plugin(
-                StableDiffusionWithLorasImageGenerator.PLUGIN_HANDLE
+                plugin_handle=GetimgAiImageGenerator.PLUGIN_HANDLE,
+                config=self.generator_plugin_config,
+                version=self.version,
             )
         return self.plugin_instance
 
@@ -62,23 +72,19 @@ class StableDiffusionWithLorasImageGenerator(ImageGenerator):
         lora_list = list(map(lambda lora: {"path": lora}, theme.loras))
         lora_json_str = json.dumps(lora_list)
 
+
         options = {
-            #"seed": theme.seed,
-            "model_name": theme.model,
-            "loras": lora_json_str,
-            "image_size": image_size,
-            "num_inference_steps": theme.num_inference_steps,
-            "guidance_scale": theme.guidance_scale,
-            "clip_skip": theme.clip_skip,
-            "scheduler": theme.scheduler,
-            "model_architecture": theme.model_architecture,
-            "negative_prompt": negative_prompt,
-            "enable_safety_checker": False
+            "model": theme.model,
+            "width": 512,
+            "height": 768,
+            "steps": 30,
+            "guidance": 7,
+            "negative_prompt":negative_prompt
         }
         #print(options)
         start = time.perf_counter()
         #logging.warning("Image theme: " + str(theme))
-        #logging.warning("Generating image for Fal: "+str(prompt)+"\nNegative prompt: "+str(negative_prompt))
+        #logging.warning("Generating image for Getimg: "+str(prompt)+"\nNegative prompt: "+str(negative_prompt))
         task = sd.generate(
             text=prompt,
             tags=tags,
@@ -257,9 +263,9 @@ class StableDiffusionWithLorasImageGenerator(ImageGenerator):
         if quest_id := game_state.current_quest:
             tags.append(QuestIdTag(quest_id))
         
-        prompt_suffix = ""
+        appearance = ""
         if game_state.player.appearance and game_state.player.appearance != "":
-            prompt_suffix = f", {game_state.player.appearance}"
+            appearance = f"{game_state.player.appearance}"
             
         task = self.generate(
             context=context,
@@ -270,6 +276,8 @@ class StableDiffusionWithLorasImageGenerator(ImageGenerator):
                 "tone": server_settings.narrative_tone,
                 "genre": server_settings.narrative_voice,
                 "description": description,
+                "appearance" : appearance,
+
             },
             image_size="portrait_4_3",
             tags=tags,

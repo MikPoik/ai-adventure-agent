@@ -103,9 +103,9 @@ class StartChatQuestTool(Tool):
 
         quest.name = QuestTag.CHAT_QUEST#f"{uuid.uuid4()}" #Always same id for chats
 
-        print(
-            f"Current chat quest name: {quest.name}. Current quest idx: {len(game_state.quests) - 1}."
-        )
+        #print(
+        #    f"Current chat quest name: {quest.name}. Current quest idx: {len(game_state.quests) - 1}."
+        #)
         game_state.current_quest = quest.name
         game_state.chat_mode = True
         # This saves it in a way that is both persistent (KV Store) and updates the context
@@ -125,7 +125,7 @@ class StartChatQuestTool(Tool):
     def run(
         self, tool_input: List[Block], context: AgentContext
     ) -> Union[List[Block], Task[Any]]:
-        logging.warning("Running StartChatQuestTool")
+        #logging.warning("Running StartChatQuestTool")
         game_state = get_game_state(context)
 
         self.start_chat_quest(game_state, context)

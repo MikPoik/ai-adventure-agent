@@ -194,24 +194,27 @@ class TrimmingStoryContextFilter(ChatHistoryFilter):
 
         total_tokens = 0
 
-        # MUST include onboarding message, as it provides the proper overall context.
+        # MUST include latest onboarding message, as it provides the proper overall context.
         selected_blocks = []
+        last_matching_block = None
         for block in blocks:
             if get_tag(
                 tags=block.tags,
                 kind=TagKindExtensions.INSTRUCTIONS,
                 name=InstructionsTag.ONBOARDING,
             ):
-                logging.debug(
-                    f"Selecting block: ({block.index_in_file}) [{block.chat_role}] {block.text}"
-                )
-                selected_blocks.append(block)
-                total_tokens += (
-                    self._calculate_and_store_token_count(block)
-                    + ROLE_TOKEN_BUFFER_SIZE
-                )
-                logging.debug(f"Total tokens: {total_tokens }")
-                break
+                last_matching_block = block
+        #Get most recent onboarding message
+        if last_matching_block:
+            logging.debug(
+                f"Selecting block: ({last_matching_block.index_in_file}) [{last_matching_block.chat_role}] {last_matching_block.text}"
+            )
+            selected_blocks.append(last_matching_block)
+            total_tokens += (
+                self._calculate_and_store_token_count(last_matching_block)
+                + ROLE_TOKEN_BUFFER_SIZE
+            )
+            logging.debug(f"Total tokens: {total_tokens }")
 
         # Also, MUST include quest beginning prompt
         for block in reversed(blocks):
@@ -228,9 +231,9 @@ class TrimmingStoryContextFilter(ChatHistoryFilter):
                 key="id",
             ):
                 if value == self._current_quest_id:
-                    logging.debug(
-                        f"Selecting block: ({block.index_in_file}) [{block.chat_role}] {block.text}"
-                    )
+                    #logging.warning(
+                        #f"Selecting block: ({block.index_in_file}) [{block.chat_role}] {block.text}"
+                    #)
                     selected_blocks.append(block)
                     total_tokens += (
                         self._calculate_and_store_token_count(block)

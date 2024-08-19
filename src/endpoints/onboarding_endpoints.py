@@ -173,7 +173,7 @@ class OnboardingMixin(PackageMixin):
             record_and_throw_unrecoverable_error(e, context)
 
     @post("init_companion_chat")
-    def init_companion_chat(self,name:str,description:str = ".",personality:str = ".",appearance:str = ".",background:str = ".",seed:str ="", **kwargs) -> bool:
+    def init_companion_chat(self,name:str,description:str = "",personality:str = "",appearance:str = "",background:str = "",seed:str ="", **kwargs) -> bool:
         try:
             if personality == "":
                 personality = "N/A"
@@ -186,11 +186,18 @@ class OnboardingMixin(PackageMixin):
     
             context = self.agent_service.build_default_context()
             game_state = get_game_state(context)
+            if not game_state:
+                logging.error("Game state is None, cannot proceed with clearing history.")
+                return False
+                
             game_state.player.name = name
             game_state.player.description = description
             game_state.player.personality = personality
             game_state.player.appearance = appearance
-            game_state.player.background = background                
+            game_state.player.background = background  
+            if seed != "":
+                game_state.player.seed_message = seed
+            
             save_game_state(game_state, context)
             
             if not game_state.onboarding_agent_has_completed:
@@ -208,6 +215,72 @@ class OnboardingMixin(PackageMixin):
             context = self.agent_service.build_default_context()
             record_and_throw_unrecoverable_error(e, context)
 
+    @post("update_companion_chat")
+    def update_companion_chat(self,name:str,description:str = "",personality:str = "",appearance:str = "",background:str = "",seed:str ="", **kwargs) -> bool:
+        """Update companion details in game state and re-add system onboarding message."""
+        try:
+            if personality == "":
+                personality = "N/A"
+            if background == "":
+                background = "N/A"
+            if appearance == "":
+                appearance = "N/A"
+            if description == "":
+                description = "N/A"
+
+            context = self.agent_service.build_default_context()
+            game_state = get_game_state(context)
+            if not game_state:
+                logging.error("Game state is None, cannot proceed with clearing history.")
+                return False
+                
+            game_state.player.name = name
+            game_state.player.description = description
+            game_state.player.personality = personality
+            game_state.player.appearance = appearance
+            game_state.player.background = background  
+            game_state.player.seed_message = seed
+            save_game_state(game_state, context)
+
+            onboarding_message = game_state.onboarding_message.format(
+                player_name=game_state.player.name,
+                player_description=game_state.player.description,
+                player_appearance=game_state.player.appearance,
+                player_personality=game_state.player.personality,
+                player_background=game_state.player.background)
+
+            context.chat_history.append_system_message(
+                text=onboarding_message,
+                tags=[
+                    Tag(
+                        kind=TagKindExtensions.INSTRUCTIONS,
+                        name=InstructionsTag.ONBOARDING,
+                    ),
+                    Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.NAME),
+                    Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.BACKGROUND),
+                    Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.MOTIVATION),
+                    Tag(
+                        kind=TagKindExtensions.CHARACTER, name=CharacterTag.DESCRIPTION
+                    ),
+                    Tag(
+                        kind=TagKindExtensions.STORY_CONTEXT,
+                        name=StoryContextTag.BACKGROUND,
+                    ),
+                    Tag(
+                        kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.TONE
+                    ),
+                    Tag(
+                        kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.VOICE
+                    ),
+                ],
+            )
+            return True
+
+        except BaseException as e:
+            logging.error(e)
+            context = self.agent_service.build_default_context()
+            record_and_throw_unrecoverable_error(e, context)
+
     
     @post("append_onboarding_message")
     def append_onboarding_message(self, message: str, **kwargs) -> bool:
@@ -219,6 +292,7 @@ class OnboardingMixin(PackageMixin):
                 player_description=game_state.player.description,
                 player_appearance=game_state.player.appearance,
                 player_personality=game_state.player.personality)
+
             context.chat_history.append_system_message(
                 text=onboarding_message,
                 tags=[
@@ -257,6 +331,10 @@ class OnboardingMixin(PackageMixin):
                         Tag(
                             kind=TagKindExtensions.CHARACTER,
                             name=CharacterTag.INTRODUCTION_PROMPT,
+                        ),
+                        Tag(
+                            kind=TagKindExtensions.INSTRUCTIONS,
+                            name=InstructionsTag.QUEST,
                         ),
                         QuestIdTag(QuestTag.CHAT_QUEST)
                         ],

@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from steamship import SteamshipError
 
 from schema.characters import Character
-from schema.image_theme import DalleTheme, StableDiffusionTheme
+from schema.image_theme import CustomStableDiffusionTheme, DalleTheme, GetImgTheme, StableDiffusionTheme
 from schema.quest import QuestDescription
 
 
@@ -160,11 +160,48 @@ DEFAULT_THEMES = [{
     "value": "realistic_vision",
     "label": "realistic vision",
     "imageSample": "/image_samples/realistic_vision.png",
-}, {
-    "value": "orange_abyss",
-    "label": "Orange abyss",
+},
+{
+    "value": "animemix_sdxl_nsfw",
+    "label": "Animemix SDXL nsfw",
     "imageSample": "/image_samples/realistic_vision.png",
-}]
+},
+{
+    "value": "clearhung_anime_sdxl_nsfw",
+    "label": "Clearhung Anime SDXL nsfw",
+    "imageSample": "/image_samples/realistic_vision.png",
+},
+{
+    "value": "iniverse_mix_sdxl_nsfw",
+    "label": "Iniverse Mix SDXL nsfw",
+    "imageSample": "/image_samples/realistic_vision.png",
+},
+{
+    "value" : "hassaku_sdxl_nsfw",
+    "label" : "Hassaku SDXL nsfw",
+    "imageSample" : "/image_samples/realistic_vision.png",
+},
+{
+    "value" : "deephentai_sdxl_nsfw",
+    "label" : "Deephentai SDXL nsfw",
+    "imageSample" : "/image_samples/realistic_vision.png",
+},
+{
+    "value": "albedo_sdxl_nsfw",
+    "label": "Albedo SDXL nsfw",
+    "imageSample": "/image_samples/realistic_vision.png",
+},
+{
+    "value": "anythingxl_sdxl_nsfw",
+    "label": "AnythingXL SDXL nsfw",
+    "imageSample": "/image_samples/realistic_vision.png",
+},
+{
+    "value": "animagine_sdxl_nsfw",
+    "label": "Animagine SDXL nsfw",
+    "imageSample": "/image_samples/realistic_vision.png",
+},
+]
 
 
 def SettingField(  # noqa: N802
@@ -332,10 +369,16 @@ class ServerSettings(BaseModel):
     )
     """For use on the profile marketing page, during 'Magic Create' mode in the editor, and during onboarding."""
 
+    default_reasoning_model: str = SettingField(
+        default="NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",
+        label="Reasoning Model",
+        description="The reasoning model to use for generating the adventure.",
+        type="string"
+    )
     # Language Generation Settings - Story telling
     #Match list with context_utils.py model list
     default_story_model: str = SettingField(
-        default="teknium/OpenHermes-2p5-Mistral-7B",
+        default="NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",
         label="Story LLM Model",
         description="Model used to generate story text.",
         type="select",
@@ -394,16 +437,55 @@ class ServerSettings(BaseModel):
         type="boolean",
     )
 
+    reasoning_temperature: float = SettingField(
+        default=0.2,
+        label="Reasoning Temperature",
+        description=
+        "The temperature to use for reasoning prompts.",
+        type="float",
+        
+    )
+    
     default_story_temperature: float = SettingField(
         # NEEDS WORK:
         # TODO: Add a post-processing step to coerce this to a float.
-        default=0.7,
+        default=0.9,
         label="Story LLM Temperature",
         description=
         "Temperature (creativity-factor) for the narrative generation. 0=Robot, 1=Bonkers, 0.4=Default",
         type="float",
         min=0,
         max=1,
+    )
+    top_p: float = SettingField(
+        default=0.8,
+        label="Top P",
+        description="Top P for the narrative generation.",
+        type="float"
+    )
+    repetition_penalty:float = SettingField(
+        default=1.015,
+        label="Repetition Penalty",
+        description="Repetition Penalty for the narrative generation.",
+        type="float"
+    )
+    frequency_penalty:float = SettingField(
+        default=0.01,
+        label="Frequency Penalty",
+        description="Frequency Penalty for the narrative generation.",
+        type="float"
+    )
+    presence_penalty:float = SettingField(
+        default=0.1,
+        label="Presence Penalty",
+        description="Presence Penalty for the narrative generation.",
+        type="float"
+    )
+    min_p: float = SettingField(
+        default=0,
+        label="Min P",
+        description="Min P for the narrative generation.",
+        type="float"
     )
     default_story_max_tokens: int = SettingField(
         default=512,
@@ -412,6 +494,12 @@ class ServerSettings(BaseModel):
         type="int",
         min=0,
         max=2048,
+    )
+    context_size : int = SettingField(
+        default = 4096,
+        label="Context Size",
+        description="Maximum number of tokens permitted during generation.",
+        type="int",
     )
 
     # Narration Generation Settings
@@ -844,6 +932,21 @@ Can include descriptions of genre, characters, specific items and locations that
         },
     )
 
+    chat_image_prompt: str = SettingField(
+        label="Chat Image Prompt",
+        description="The prompt for generating a chat image.",
+        type="longtext",
+        default=
+        "{description},[{appearance}]",
+        variables_permitted={
+            "appearance": "Appearance of the player.",
+            "tone": "Description of the tone of the adventure.",
+            "genre": "Description of the genre of the adventure.",
+            "description": "Description of the quest the player is on.",
+        },
+    )
+
+
     quest_background_image_negative_prompt: str = SettingField(
         name="quest_background_image_negative_prompt",
         label="Quest Background Negative Prompt",
@@ -884,7 +987,7 @@ Can include descriptions of genre, characters, specific items and locations that
         },
     )
 
-    image_themes: List[Union[StableDiffusionTheme, DalleTheme]] = SettingField(
+    image_themes: List[Union[StableDiffusionTheme, DalleTheme,CustomStableDiffusionTheme,GetImgTheme]] = SettingField(
         default=[],
         label="Image Themes",
         description=
@@ -944,6 +1047,42 @@ Can include descriptions of genre, characters, specific items and locations that
                         "label": "Stable Diffusion XL 1.0",
                         "value": "stabilityai/stable-diffusion-xl-base-1.0",
                     },
+                    {
+                        "label": "iNiverseMix (SDXL)",
+                        "value": "https://civitai.com/api/download/models/294706",
+                    },
+                    {
+                        "label": "Omnigen XL (SDXL)",
+                        "value": "https://civitai.com/api/download/models/228559?type=Model&format=SafeTensor&size=pruned&fp=fp16"
+                    },
+                    {
+                        "label": "Albedo (SDXL)",
+                        "value": "https://civitai.com/api/download/models/281176?type=Model&format=SafeTensor&size=pruned&fp=fp16"
+                    },
+                    {
+                        "label": "AnythingXL (SDXL)",
+                        "value": "https://civitai.com/api/download/models/384264?type=Model&format=SafeTensor&size=full&fp=fp16"
+                    },
+                    {
+                        "label": "Animagine (SDXL)",
+                        "value": "https://civitai.com/api/download/models/293564?type=Model&format=SafeTensor&size=full&fp=fp32"
+                    },
+                    {
+                        "label": "Clearhung Anime (SDXL)",
+                        "value": "https://civitai.com/api/download/models/156375"
+                    },
+                    {
+                        "label": "Hassaku (SDXL)",
+                        "value": "https://civitai.com/api/download/models/378499"
+                    },
+                    {
+                        "label": "Animemix (SDXL)",
+                        "value": "https://civitai.com/api/download/models/303526?type=Model&format=SafeTensor&size=full&fp=fp16"
+                    },
+                    {
+                        "label": "Deephentai (SDXL)",
+                        "value": "https://civitai.com/api/download/models/286821"
+                    }
                 ],
             },
             {
@@ -1037,7 +1176,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="orange_abyss",
+        default="omnigen_sdxl_nsfw",
         include_dynamic_options="image-themes",
     )
 
@@ -1048,7 +1187,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="orange_abyss",
+        default="omnigen_sdxl_nsfw",
         include_dynamic_options="image-themes",
     )
 
@@ -1059,7 +1198,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="orange_abyss",
+        default="omnigen_sdxl_nsfw",
         include_dynamic_options="image-themes",
     )
 
@@ -1070,10 +1209,10 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="orange_abyss",
+        default="omnigen_sdxl_nsfw",
         include_dynamic_options="image-themes",
     )
-
+    #used for chat images also
     quest_background_theme: str = SettingField(
         # VALIDATED
         label="Quest Background Theme",
@@ -1081,7 +1220,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="orange_abyss",
+        default="omnigen_sdxl_nsfw",
         include_dynamic_options="image-themes",
     )
 
@@ -1112,7 +1251,7 @@ Can include descriptions of genre, characters, specific items and locations that
         min=-1,
     )
     chat_mode: Optional[bool] = SettingField(
-        default=True,
+        default=False,
         label="Use chat mode only",
         description="Use chat mode only,instead of questing",
         type="bool",
@@ -1129,6 +1268,18 @@ Can include descriptions of genre, characters, specific items and locations that
         description="Enable images in chat",
         type="bool",
     )
+    image_theme_by_model: Optional[str] = SettingField(
+        default="",
+        label="Get theme by custom model matching theme class",
+        description="Get theme by model name instead of theme name",
+        type="text",
+    )
+    enable_moderation: Optional[bool] = SettingField(
+        default=False,
+        label="Enable moderation",
+        description="Enable moderation",
+        type="bool",
+        )
 
     @property
     def narration_voice_id(self) -> str:

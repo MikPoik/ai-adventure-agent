@@ -29,7 +29,7 @@ from steamship.utils.kv_store import KeyValueStore
 
 from generators.cascading_plugin import CascadingPlugin
 from schema.game_state import GameState
-from schema.image_theme import DEFAULT_THEME, PREMADE_THEMES, ImageTheme
+from schema.image_theme import DEFAULT_THEME, PREMADE_THEMES, CustomStableDiffusionTheme, GetImgTheme, ImageTheme
 from schema.server_settings import ServerSettings
 from utils.tags import QuestIdTag
 from utils.moderation_utils import mark_block_as_excluded
@@ -38,16 +38,27 @@ _STORY_GENERATOR_KEY = "story-generator"
 _FUNCTION_CAPABLE_LLM = (
     "function-capable-llm"  # This could be distinct from the one generating the story.
 )
+_REASONING_GENERATOR_KEY = "reasoning-generator" #function-cabable or react style
+
 _BACKGROUND_MUSIC_GENERATOR_KEY = "background-music-generator"
 _NARRATION_GENERATOR_KEY = "narration-generator"
 _SERVER_SETTINGS_KEY = "server-settings"
 _GAME_STATE_KEY = "user-settings"
 _TOGETHERAI_API_KEY = "togetherai-api-key"
+_FALAI_API_KEY = "falai_api_key"
+_GETIMG_AI_API_KEY = "getimg_ai_api_key"
+
+def with_getimg_ai_key(api_key: str, context: AgentContext) -> AgentContext:
+    context.metadata[_GETIMG_AI_API_KEY] = api_key
+    return context
 
 def with_togetherai_key(api_key: str, context: AgentContext) -> AgentContext:
     context.metadata[_TOGETHERAI_API_KEY] = api_key
     return context
 
+def with_falai_key(api_key: str, context: AgentContext) -> AgentContext:
+    context.metadata[_FALAI_API_KEY] = api_key
+    return context
 
 def with_function_capable_llm(instance: ChatLLM,
                               context: AgentContext) -> AgentContext:
@@ -105,6 +116,11 @@ def get_story_text_generator(
             "model": model_name,
             "max_tokens": server_settings.default_story_max_tokens,
             "temperature": server_settings.default_story_temperature,
+            "repetition_penalty": server_settings.repetition_penalty,
+            "top_p": server_settings.top_p,
+            "min_p": server_settings.min_p,
+            "frequency_penalty": server_settings.frequency_penalty,
+            "presence_penalty": server_settings.presence_penalty
         }
         plugin_handle = None
         version = None        
@@ -144,6 +160,63 @@ def get_story_text_generator(
 
     return generator
 
+def get_reasoning_generator(
+    context: AgentContext,
+    default: Optional[PluginInstance] = None) -> Optional[PluginInstance]:
+    generator = context.metadata.get(_REASONING_GENERATOR_KEY, default)
+    
+    if not generator:
+        # Lazily create
+        server_settings: ServerSettings = get_server_settings(context)
+        game_state = get_game_state(context)
+        preferences = game_state.preferences
+    
+        open_ai_models = ["gpt-3.5-turbo", "gpt-4-1106-preview", "gpt-4","gpt-3.5-turbo-0613"]
+        replicate_models = ["dolly_v2", "llama_v2"]
+        together_ai_models = [
+            "NousResearch/Nous-Hermes-2-Yi-34B",
+            "NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",
+            "NousResearch/Nous-Hermes-2-Mixtral-8x7B-SFT",
+            "mistralai/Mixtral-8x7B-Instruct-v0.1",
+            "teknium/OpenHermes-2p5-Mistral-7B",
+            "cognitivecomputations/dolphin-2.5-mixtral-8x7b",
+            "Gryphe/MythoMax-L2-13b",
+            "gpt-3.5-turbo-0613",
+            "teknium/OpenHermes-2-Mistral-7B"
+        ]
+    
+        model_name = server_settings._select_model(
+            open_ai_models + replicate_models + together_ai_models,
+            default=server_settings.default_story_model,
+            preferred=preferences.narration_model,
+        )
+        config = {
+            "model": server_settings.default_reasoning_model,
+            "max_tokens": 150,
+            "temperature": server_settings.reasoning_temperature
+        }
+        plugin_handle = None
+        version = None        
+    
+        if model_name in open_ai_models:
+            plugin_handle = "gpt-4"
+        elif model_name in replicate_models:
+            plugin_handle = "replicate-llm"
+        elif model_name in together_ai_models:
+            plugin_handle = "together-ai-generator"
+            version = "1.0.2"
+            config[
+                "api_key"] = context.metadata[_TOGETHERAI_API_KEY]        
+        #logging.warning("model: " + model_name)
+        #logging.warning("plugin_handle: " + plugin_handle)
+        generator = context.client.use_plugin(plugin_handle,
+                                              config=config,
+                                              version=version)
+    
+    
+        context.metadata[_REASONING_GENERATOR_KEY] = generator
+    
+    return generator
 
 def get_background_music_generator(
         context: AgentContext,
@@ -579,12 +652,23 @@ class RunNextAgentException(Exception):  # noqa: N818
         self.action = action
 
 
+
 def get_theme(name: str, context: AgentContext) -> ImageTheme:
     server_settings = get_server_settings(context)
-    for theme in server_settings.image_themes or []:
-        if name == theme.name:
-            return theme
-    for theme in PREMADE_THEMES:
-        if name == theme.name:
-            return theme
+    get_by_model = (server_settings.image_theme_by_model if server_settings.image_theme_by_model 
+                    and server_settings.chat_mode else "")
+
+    potential_themes = (server_settings.image_themes or []) + PREMADE_THEMES
+
+    if not get_by_model:
+        for theme in potential_themes:
+            if name == theme.name:
+                return theme
+    else:
+        for theme in potential_themes:
+            if isinstance(theme, CustomStableDiffusionTheme) and theme.model == get_by_model:
+                return theme
+            elif isinstance(theme, GetImgTheme) and theme.model == get_by_model:   
+                return theme
+
     return DEFAULT_THEME

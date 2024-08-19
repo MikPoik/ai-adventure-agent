@@ -12,12 +12,14 @@ from tools.start_quest_tool import StartQuestTool
 from utils.context_utils import (
     get_audio_narration_generator,
     get_game_state,
+    get_server_settings,
     save_game_state,
 )
 from utils.error_utils import record_and_throw_unrecoverable_error
 from utils.generation_utils import generate_quest_arc
-from utils.tags import QuestIdTag, SceneTag, TagKindExtensions,CharacterTag,StoryContextTag,InstructionsTag
-
+from utils.tags import QuestIdTag, SceneTag, TagKindExtensions,CharacterTag,StoryContextTag,InstructionsTag,QuestTag
+from utils.tags import QuestIdTag
+import logging
 
 class QuestMixin(PackageMixin):
     """Provides endpoints for Game State."""
@@ -38,16 +40,18 @@ class QuestMixin(PackageMixin):
                 try:
                     # Parse the JSON string to extract messages
                     messages = loads(prompt)
-                    context = self.build_default_context(context_id)
+                    context = self.agent_service.build_default_context()
 
                     # Loop through each message and add it to chat history
                     for message in messages:
                         if message['role'] == 'assistant':
                             context.chat_history.append_assistant_message(
-                                message['content'])
+                                text=message['content'],
+                            tags=[QuestIdTag(QuestTag.CHAT_QUEST)])
                         elif message['role'] == 'user':
                             context.chat_history.append_user_message(
-                                message['content'])
+                                text=message['content'],
+                            tags=[QuestIdTag(QuestTag.CHAT_QUEST)])
                 except Exception as e:
                     logging.warning(
                         "Failed to parse prompt or append to chat history: " +
@@ -60,7 +64,7 @@ class QuestMixin(PackageMixin):
         """TODO: check if needs modification"""
         #check history length, catch errors.
         try:
-            context = self.build_default_context(context_id)
+            context = self.agent_service.build_default_context()
             last_user_message = context.chat_history.last_user_message
             last_agent_message = context.chat_history.last_agent_message
             selector = MessageWindowMessageSelector(k=1)
@@ -88,13 +92,19 @@ class QuestMixin(PackageMixin):
         """Clears the agent's chat history."""
         context = self.agent_service.build_default_context()
         game_state = get_game_state(context)
+        if not game_state:
+            logging.error("Game state is None, cannot proceed with clearing history.")
+            return "GAME_STATE_NOT_FOUND"
+
         context.chat_history.clear()
-        #Re-seed onboarding message, duplicate message template for now..
+        #Re-seed onboarding message
         onboarding_message = game_state.onboarding_message.format(
             player_name=game_state.player.name,
             player_description=game_state.player.description,
             player_appearance=game_state.player.appearance,
-            player_personality=game_state.player.personality)
+            player_personality=game_state.player.personality,
+            player_background=game_state.player.background,) 
+        
         context.chat_history.append_system_message(
             text=onboarding_message,
             tags=[
@@ -120,6 +130,28 @@ class QuestMixin(PackageMixin):
                 ),
             ],
         )
+        if game_state.player.seed_message:
+            #logging.warning(f"Appending seed message: {game_state.player.seed_message}")
+            context.chat_history.append_assistant_message(
+                text=game_state.player.seed_message,
+                tags=[                       
+                    Tag(
+                        kind=TagKindExtensions.CHARACTER,
+                        name=CharacterTag.SEED,
+                    ),
+                    Tag(kind=TagKindExtensions.CHARACTER,
+                        name=CharacterTag.INTRODUCTION),
+                    Tag(
+                        kind=TagKindExtensions.CHARACTER,
+                        name=CharacterTag.INTRODUCTION_PROMPT,
+                    ),
+                    Tag(
+                        kind=TagKindExtensions.INSTRUCTIONS,
+                        name=InstructionsTag.QUEST,
+                    ),
+                    QuestIdTag(QuestTag.CHAT_QUEST)
+                    ],
+            )
         return "OK"
         
     @post("/generate_quest_arc")
