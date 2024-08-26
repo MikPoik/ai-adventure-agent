@@ -9,10 +9,10 @@ from steamship.invocable.package_mixin import PackageMixin
 
 from agents.onboarding_agent import OnboardingAgent, _is_allowed_by_moderation
 from generators.generator_context_utils import get_profile_image_generator
-from schema.game_state import ActiveMode
+from schema.game_state import ActiveMode, GameState
 
 # An instnace is a game instance.
-from utils.context_utils import RunNextAgentException, get_game_state, save_game_state
+from utils.context_utils import RunNextAgentException, append_chat_intro_messages, get_game_state, save_game_state
 from utils.error_utils import record_and_throw_unrecoverable_error
 from utils.generation_utils import generate_story_intro
 from utils.tags import QuestIdTag, SceneTag, TagKindExtensions,StoryContextTag,CharacterTag,InstructionsTag,QuestTag
@@ -173,7 +173,7 @@ class OnboardingMixin(PackageMixin):
             record_and_throw_unrecoverable_error(e, context)
 
     @post("init_companion_chat")
-    def init_companion_chat(self,name:str,description:str = "",personality:str = "",appearance:str = "",background:str = "",seed:str ="", **kwargs) -> bool:
+    def init_companion_chat(self,name:str,description:str = "",personality:str = "",appearance:str = "",background:str = "",seed:str ="",tags:str = "", **kwargs) -> bool:
         try:
             if personality == "":
                 personality = "N/A"
@@ -183,8 +183,12 @@ class OnboardingMixin(PackageMixin):
                 appearance = "N/A"
             if description == "":
                 description = "N/A"
+            if tags == "":
+                tags = "Fictional"
     
             context = self.agent_service.build_default_context()
+            #onboarding_message = GameState.onboarding_message if hasattr(GameState, 'onboarding_message') else "Default onboarding message"
+            
             game_state = get_game_state(context)
             if not game_state:
                 logging.error("Game state is None, cannot proceed with clearing history.")
@@ -194,7 +198,8 @@ class OnboardingMixin(PackageMixin):
             game_state.player.description = description
             game_state.player.personality = personality
             game_state.player.appearance = appearance
-            game_state.player.background = background  
+            game_state.player.background = background
+            game_state.tags = tags
             if seed != "":
                 game_state.player.seed_message = seed
             
@@ -216,7 +221,7 @@ class OnboardingMixin(PackageMixin):
             record_and_throw_unrecoverable_error(e, context)
 
     @post("update_companion_chat")
-    def update_companion_chat(self,name:str,description:str = "",personality:str = "",appearance:str = "",background:str = "",seed:str ="", **kwargs) -> bool:
+    def update_companion_chat(self,name:str,description:str = "",personality:str = "",appearance:str = "",background:str = "",seed:str ="",tags:str ="", **kwargs) -> bool:
         """Update companion details in game state and re-add system onboarding message."""
         try:
             if personality == "":
@@ -227,19 +232,23 @@ class OnboardingMixin(PackageMixin):
                 appearance = "N/A"
             if description == "":
                 description = "N/A"
+            if tags == "":
+                tags = "N/A"    
 
             context = self.agent_service.build_default_context()
             game_state = get_game_state(context)
             if not game_state:
-                logging.error("Game state is None, cannot proceed with clearing history.")
+                logging.error("Game state is None, cannot proceed.")
                 return False
-                
+            temp_game_state = GameState()    
+            game_state.onboarding_message = temp_game_state.onboarding_message
             game_state.player.name = name
             game_state.player.description = description
             game_state.player.personality = personality
             game_state.player.appearance = appearance
             game_state.player.background = background  
             game_state.player.seed_message = seed
+            game_state.tags = tags
             save_game_state(game_state, context)
 
             onboarding_message = game_state.onboarding_message.format(
@@ -247,7 +256,8 @@ class OnboardingMixin(PackageMixin):
                 player_description=game_state.player.description,
                 player_appearance=game_state.player.appearance,
                 player_personality=game_state.player.personality,
-                player_background=game_state.player.background)
+                player_background=game_state.player.background,
+                tags=tags)
 
             context.chat_history.append_system_message(
                 text=onboarding_message,
@@ -274,6 +284,7 @@ class OnboardingMixin(PackageMixin):
                     ),
                 ],
             )
+            
             return True
 
         except BaseException as e:
@@ -291,7 +302,9 @@ class OnboardingMixin(PackageMixin):
                 player_name=game_state.player.name,
                 player_description=game_state.player.description,
                 player_appearance=game_state.player.appearance,
-                player_personality=game_state.player.personality)
+                player_personality=game_state.player.personality,
+                player_background=game_state.player.background,
+                tags=game_state.tags)
 
             context.chat_history.append_system_message(
                 text=onboarding_message,

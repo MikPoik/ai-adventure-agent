@@ -20,6 +20,7 @@ from schema.server_settings import ServerSettings
 from schema.server_settings_schema import SCHEMA
 from utils.agent_service import AgentService
 from utils.context_utils import get_server_settings, get_theme, save_server_settings
+from utils.generation_utils import print_log
 
 
 class ServerSettingsMixin(PackageMixin):
@@ -57,9 +58,9 @@ class ServerSettingsMixin(PackageMixin):
         try:
             context = self.agent_service.build_default_context()
             server_settings = get_server_settings(context)
-            logging.warning(f"PATCH /patch_server_settings {kwargs}")
+            print_log(f"PATCH /patch_server_settings {kwargs}")
             for k, v in kwargs.items():
-                logging.warning(f"Updating server_settings attribute {k} from {getattr(server_settings, k, 'NOT SET')} to {v}")
+                print_log(f"Updating server_settings attribute {k} from {getattr(server_settings, k, 'NOT SET')} to {v}")
                 setattr(server_settings, k, v)
             #backwards compatibility check for old model keywords
             if server_settings.image_theme_by_model and server_settings.image_theme_by_model == "realistic":

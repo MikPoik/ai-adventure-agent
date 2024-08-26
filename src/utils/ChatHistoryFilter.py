@@ -30,7 +30,9 @@ class ChatHistoryFilter(ABC):
         self, chat_history_file: File, filter_for: Optional[str] = None
     ) -> List[int]:
         filtered_blocks = self.filter_blocks(chat_history_file=chat_history_file)
-        filtered_blocks.sort(key=lambda x: x[0].index_in_file)
+
+        #Keep inserted order
+        #filtered_blocks.sort(key=lambda x: x[0].index_in_file)
         filtered_blocks = [
             block_tuple
             for block_tuple in filtered_blocks
@@ -42,10 +44,10 @@ class ChatHistoryFilter(ABC):
             debug_messages.append(
                 f"{block.index_in_file} [{inclusion_reason}] ({block.chat_role}) {block.text}"
             )
-        #logging.warning("\nChatHistoryFilter results:\n".join(debug_messages))
-        return list(
-            {filtered_block[0].index_in_file for filtered_block in filtered_blocks}
-        )
+        #logging.warning("\nChatHistoryFilter appended:\n".join(debug_messages))
+        return [
+            filtered_block[0].index_in_file for filtered_block in filtered_blocks
+        ]
 
 
 class TagFilter(ChatHistoryFilter):
@@ -196,51 +198,51 @@ class TrimmingStoryContextFilter(ChatHistoryFilter):
 
         # MUST include latest onboarding message, as it provides the proper overall context.
         selected_blocks = []
-        last_matching_block = None
+        last_matching_onboarding_block = None
         for block in blocks:
             if get_tag(
                 tags=block.tags,
                 kind=TagKindExtensions.INSTRUCTIONS,
                 name=InstructionsTag.ONBOARDING,
             ):
-                last_matching_block = block
+                last_matching_onboarding_block = block
         #Get most recent onboarding message
-        if last_matching_block:
-            logging.debug(
-                f"Selecting block: ({last_matching_block.index_in_file}) [{last_matching_block.chat_role}] {last_matching_block.text}"
-            )
-            selected_blocks.append(last_matching_block)
+        if last_matching_onboarding_block:
+            #logging.warning(
+            #    f"Selecting Onboarding block: ({last_matching_onboarding_block.index_in_file}) [{last_matching_onboarding_block.chat_role}] {last_matching_onboarding_block.text}"
+            #)
+            #selected_blocks.append(last_matching_block)
             total_tokens += (
-                self._calculate_and_store_token_count(last_matching_block)
+                self._calculate_and_store_token_count(last_matching_onboarding_block)
                 + ROLE_TOKEN_BUFFER_SIZE
             )
             logging.debug(f"Total tokens: {total_tokens }")
 
         # Also, MUST include quest beginning prompt
         for block in reversed(blocks):
-            if not get_tag(
+            if block.chat_role == RoleTag.SYSTEM and get_tag(
                 tags=block.tags,
                 kind=TagKindExtensions.INSTRUCTIONS,
                 name=InstructionsTag.QUEST,
             ):
-                continue
-            if value := get_tag_value_key(
-                tags=block.tags,
-                kind=TagKindExtensions.QUEST,
-                name=QuestTag.QUEST_ID,
-                key="id",
-            ):
-                if value == self._current_quest_id:
-                    #logging.warning(
-                        #f"Selecting block: ({block.index_in_file}) [{block.chat_role}] {block.text}"
-                    #)
-                    selected_blocks.append(block)
-                    total_tokens += (
-                        self._calculate_and_store_token_count(block)
-                        + ROLE_TOKEN_BUFFER_SIZE
-                    )
-                    logging.debug(f"Total tokens: {total_tokens}")
-                    break
+                #continue
+                if value := get_tag_value_key(
+                    tags=block.tags,
+                    kind=TagKindExtensions.QUEST,
+                    name=QuestTag.QUEST_ID,
+                    key="id",
+                ):
+                    if value == self._current_quest_id:
+                        #logging.warning(
+                        #    f"Selecting Quest Instruction block: ({block.index_in_file}) [{block.chat_role}] {block.text}"
+                        #)
+                        selected_blocks.append(block)
+                        total_tokens += (
+                            self._calculate_and_store_token_count(block)
+                            + ROLE_TOKEN_BUFFER_SIZE
+                        )
+                        logging.debug(f"Total tokens: {total_tokens}")
+                        break
 
         # Now include any assistant/user messages that provide the context.
         for block in reversed(blocks):
@@ -259,9 +261,9 @@ class TrimmingStoryContextFilter(ChatHistoryFilter):
                             block_tokens + total_tokens + ROLE_TOKEN_BUFFER_SIZE
                             < self._max_tokens
                         ):
-                            logging.debug(
-                                f"Selecting block: ({block.index_in_file}) [{block.chat_role}] {block.text}"
-                            )
+                            #logging.warning(
+                            #    f"Selecting User/Assistant block: ({block.index_in_file}) [{block.chat_role}] {block.text}"
+                            #)
                             selected_blocks.append(block)
                             total_tokens += block_tokens + ROLE_TOKEN_BUFFER_SIZE
                             logging.debug(f"Total tokens: {total_tokens}")
@@ -288,7 +290,7 @@ class TrimmingStoryContextFilter(ChatHistoryFilter):
                         logging.debug(f"Total tokens: {total_tokens}")
 
         logging.debug(f"TOTAL_TOKENS = {total_tokens}, MAX_TOKENS = {self._max_tokens}")
-        block_list = sorted(selected_blocks, key=lambda b: b.index_in_file)
+        block_list = [last_matching_onboarding_block] + sorted(selected_blocks, key=lambda b: b.index_in_file) if last_matching_onboarding_block else sorted(selected_blocks, key=lambda b: b.index_in_file)
         return_tuples = []
         for block in block_list:
             return_tuples.append((block, id_to_reasons.get(block.id)))

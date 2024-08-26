@@ -14,6 +14,7 @@ from steamship.agents.mixins.transports.slack import SlackTransport
 from steamship.agents.mixins.transports.steamship_widget import SteamshipWidgetTransport
 from steamship.agents.mixins.transports.telegram import TelegramTransport
 from steamship.agents.schema import Agent, AgentContext, Tool
+from steamship.cli.utils import is_in_replit
 from steamship.data import TagKind
 from steamship.data.block import Block, StreamState
 from steamship.data.tags.tag_constants import RoleTag
@@ -39,9 +40,9 @@ from schema.characters import HumanCharacter
 from schema.game_state import ActiveMode
 from schema.server_settings import ServerSettings
 from utils.agent_service import AgentService
-from utils.context_utils import get_game_state, get_server_settings, save_game_state, save_server_settings
+from utils.context_utils import get_game_state, get_server_settings, save_game_state, save_server_settings, with_deepinfra_key
 from utils.tags import TagKindExtensions
-from utils.context_utils import with_togetherai_key,with_falai_key,with_getimg_ai_key
+from utils.context_utils import with_togetherai_key,with_falai_key,with_getimg_ai_key,with_deepinfra_key
 
 class AdventureGameService(AgentService):
     """Deployable game that runs an instance of a magical AI Adventure Game.
@@ -132,24 +133,16 @@ class AdventureGameService(AgentService):
             description="Together AI API key defined",
         )
         falai_api_key: str = Field(
-            "",
+            ":",
             description="Falai API key defined",
         )
         getimg_ai_api_key: str = Field(
             "key-",
             description="GetImg AI API key defined",
         )
-        chat_mode: bool = Field(
-            True,
-            description="Use chat mode instead of default questing"
-        )
-        enable_images_in_chat:bool = Field(
-            False,
-            description="Enable images in chat mode"
-        )
-        auto_start_chat_mode:bool = Field(
-            True,
-            description="Auto start chat mode after onboarding"
+        deepinfra_api_key: str = Field(
+            "",
+            description="DeepInfra API key defined",
         )
 
 
@@ -235,10 +228,8 @@ class AdventureGameService(AgentService):
         context = with_togetherai_key(self.config.togetherai_api_key, context)
         context = with_falai_key(self.config.falai_api_key, context)
         context = with_getimg_ai_key(self.config.getimg_ai_api_key,context)
-        if self.config.chat_mode:
-            server_settings = get_server_settings(context)
-            server_settings.chat_mode = self.config.chat_mode
-            server_settings.enable_images_in_chat = self.config.enable_images_in_chat
+        context = with_deepinfra_key(self.config.deepinfra_api_key, context)
+
 
         return context
         
@@ -376,7 +367,7 @@ class GameREPL(AgentREPL):
                     ] and (time.perf_counter() - start_time) < 30):
                         time.sleep(0.4)
                         block = Block.get(block.client, _id=block.id)
-            self.print_new_block(block)
+            self.print_new_img_block(block)
         self.last_seen_block = context.chat_history.file.blocks[
             -1].index_in_file
         super().print_object_or_objects(output, metadata)
@@ -399,6 +390,22 @@ class GameREPL(AgentREPL):
                               subsequent_indent="  ",
                               break_long_words=False,
                               width=150))
+            
+    def print_new_img_block(self, block: Block):
+        tag_kinds = {tag.kind for tag in block.tags}
+        tag_names = {tag.name for tag in block.tags}
+
+        if (("streamed-to-chat-history" in tag_names and block.chat_role in [RoleTag.ASSISTANT]) or block.mime_type == "image/png"):
+            tag_texts = "".join(
+                sorted({f"[{tag.kind},{tag.name}]"
+                        for tag in block.tags}))
+            output = ""
+            if block.is_text():
+                output = f"{tag_texts} {block.text}\n"
+            elif block.mime_type == "image/png":
+                output = f"{tag_texts} {block.raw_data_url}"
+                
+            print(output)
 
 
 if __name__ == "__main__":
@@ -413,6 +420,7 @@ if __name__ == "__main__":
         character = parse_yaml_raw_as(HumanCharacter, yaml_string)
 
     with Steamship.temporary_workspace() as client:
+        
         repl = GameREPL(
             cast(AgentService, AdventureGameService),
             agent_package_config={},

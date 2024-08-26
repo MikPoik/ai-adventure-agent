@@ -6,6 +6,7 @@ from random import randint, random
 import textwrap
 from typing import Dict, List
 
+from pydantic.generics import Parametrization
 from pydantic.utils import Representation
 from steamship import SteamshipError, Tag
 from steamship.agents.logging import AgentLogging
@@ -32,6 +33,7 @@ from utils.context_utils import (
 from utils.generation_utils import (
     await_streamed_block,
     generate_image_description,
+    generate_is_image_request,
     generate_is_solution_attempt,
     generate_likelihood_estimation,
     generate_quest_arc,
@@ -115,6 +117,7 @@ class ChatAgent(InterruptiblePythonAgent):
             if server_settings.enable_images_in_chat: 
                 task = self.handle_image_generation(game_state, context, quest, response_block.text)
 
+
         
 
         if game_state.chat_mode and game_state.chat_intro_complete:      
@@ -180,26 +183,37 @@ class ChatAgent(InterruptiblePythonAgent):
         prompt = textwrap.dedent(
         f"""\
         <Instruction>
-        Switch to function mode.
-        Given the context of conversion and last message: {user_prompt_processed}
+        Pause embodying character and revert to assistant mode.
+        Given the context of conversion and last message: "{user_prompt_processed}"
         
-        Imagine fitting image description keywords for an imaginary image of {game_state.player.name}, 
-        Give your response in the following json format:
+        Imagine fitting image description keywords for an imaginary image of {game_state.player.name}, with looks like {game_state.player.appearance}
+
+        Give your response in the following object format with json array, write up to 20 detailed image description keywords here as plist covering topics:
         {{
         "ImageDescriptionKeywords": [
-            insert image description keywords here as plist
+            Detailed Subject Looks,
+            Body Features,
+            Posture,
+            Detailed Imagery,
+            Environment Description,
+            Mood/Atmosphere Description,
+            Style,
+            Style Execution ("DSLR ,realistic, highly detailed,highres, RAW,8k" OR "amateur,phone photograph, grainy, analog, selfie" )
         ]
         }}
-        Return just the json, no other text is necessary.\
+        
+        <reasoning>Write reasoning here</reasoning>
+        ```json\
         """)
 
-        is_solution_attempt_response = generate_image_description(
+        image_description_response = generate_image_description(
     prompt=prompt,
     quest_name=quest.name,
     context=context,
-    )
+    )    
+
         #logging.warning(f"Image description response:\n{is_solution_attempt_response.text}")
-        return is_solution_attempt_response.text.strip()
+        return image_description_response.text.strip()
 
     def generate_plan(self, game_state: GameState, context: AgentContext,
     quest: Quest,user_prompt:str):
@@ -210,45 +224,71 @@ class ChatAgent(InterruptiblePythonAgent):
         Pause embodying character and revert to assistant mode.
         Review the message from {game_state.player.name}: "{user_prompt_processed}".
         
+        Task is to classify if a image should be generated in addition to the message.
         Determine if the message contains any suggestion, gesture,action, intent,indication, or implication—directly or indirectly—that an image/selfie/picture is:
         - being described,
         - being sent,
         - about to be sent,
         - going to be taken,
+        - going to snap selfie,
         - or intended to be shown.
-        
+
         Provide your response in the following format:
         <result>True/False</result>
+
         <confidence>0.00-1.00</confidence>
+        
         <reasoning>reasoning here</reasoning>\
         """)
-
-        is_solution_attempt_response = generate_is_solution_attempt(
+        
+        plan_response = generate_is_image_request(
     prompt=prompt,
     quest_name=quest.name,
     context=context,
     )
-        #logging.warning(f"Plan response:\n{is_solution_attempt_response.text}")
-        return is_solution_attempt_response.text.strip()
+        #logging.warning(f"Image Request classification response:\n{plan_response.text}")
+        return plan_response.text.strip()
 
     def handle_image_generation(self, game_state: GameState, context: AgentContext, quest: Quest, response_text: str):
         server_settings = get_server_settings(context)
 
         if not server_settings.enable_images_in_chat:
+            #logging.warning(f"Image generation is disabled in server settings")
             return None
         response_plan = self.generate_plan(game_state, context, quest, user_prompt=response_text)
 
         if "true" not in response_plan.lower():
+            #logging.warning("Response did not include image suggestion")
             return None
         image_description = self.generate_image_description(game_state, context, quest, user_prompt=response_text)
 
         try:
             image_description_data = json.loads(image_description)
             if "ImageDescriptionKeywords" in image_description_data:
-                image_description = " ,".join(image_description_data["ImageDescriptionKeywords"])
+                # Extract the values and remove keys if present
+                image_description_keywords = image_description_data["ImageDescriptionKeywords"]
+                cleaned_keywords = [
+                    keyword.split(":", 1)[1].strip() if ":" in keyword else keyword
+                    for keyword in image_description_keywords
+                ]
+                image_description = ", ".join(cleaned_keywords)
+                image_description.replace("Detailed Subject Looks","")\
+                .replace("Detailed Imagery","")\
+                .replace("Environment Description","")\
+                .replace("Mood/Atmosphere Description","")\
+                .replace("Style","")\
+                .replace("Style Execution","")\
+                .replace("Posture","")\
+                .replace("Cropped","")\
+                .replace("Environment Description","")\
+                .replace("Body features","")
+                
         except json.JSONDecodeError:
-            logging.error("Failed to parse image description JSON.")
-            return None
+            logging.error(f"Failed to parse image description JSON. {image_description}")
+            #return None
+        except Exception:
+            logging.warning(f"Malformed response. {image_description}")
+
         image_gen = get_chat_image_generator(context)
         if image_gen:
             task = image_gen.request_chat_image_generation(description=image_description, context=context)

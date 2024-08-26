@@ -151,13 +151,13 @@ class StableDiffusionTheme(ImageTheme):
     )
 
     guidance_scale: float = Field(
-        7.5,
+        6,
         description=
         "The CFG(Classifier Free Guidance) scale is a measure of how close you want the model to stick to your prompt when looking for a related image to show you.",
     )
 
     clip_skip: int = Field(
-        0,
+        2,
         description=
         "Skips part of the image generation process, leading to slightly different results. This means the image renders faster, too.",
     )
@@ -169,7 +169,7 @@ class StableDiffusionTheme(ImageTheme):
     )
 
     scheduler: str = Field(
-        "DPM++ 2M",
+        "DPM++ 2M SDE",
         description=
         "Scheduler (or sampler) to use for the image denoising process. Possible values: ['DPM++ 2M', 'DPM++ 2M Karras', 'DPM++ 2M SDE', 'DPM++ 2M SDE Karras', 'Euler', 'Euler A']",
     )
@@ -199,144 +199,285 @@ class GetImgTheme(StableDiffusionTheme):
         description="image width"
     )
     height: int = Field(
-        512,
+        768,
         description="image height"
     )
 
 
+class FluxTheme(StableDiffusionTheme):
+    sync_mode: bool =Field(
+        False,
+        description="the function will wait for the image to be generated and uploaded before returning the response"
+
+    )
+
+FLUX_WITH_LORA = FluxTheme(
+    name="flux_nsfw_lora",
+    model="flux-general-with-lora",
+    image_size="portrait_4_3",
+    prompt_prefix="",
+    num_inference_steps=20,
+    guidance_scale=4,
+)
+
 REALISTIC_VISION_V3 = GetImgTheme(
     name="realistic_vision_v3",
     model="realistic-vision-v3",
-    width=512,
-    height=768,
-    negative_prompt_prefix="missing limbs, worst quality, close-up",
-    custom_generate=True
+    #prompt_prefix="photorealistic, ",
+    #prompt_suffix=", realistic, highly detailed,highres, RAW,8k",
+    negative_prompt_prefix="watermark, text, font, signage,deformed,airbrushed, blurry,bad anatomy, disfigured, poorly drawn face, mutated, extra limb, ugly, poorly drawn hands, missing limb, floating limbs, disconnected limbs, disconnected head, malformed hands, long neck, mutated hands and fingers, bad hands, missing fingers, cropped, worst quality, mutation, poorly drawn, huge calf, bad hands, fused hand, missing hand, disappearing arms, disappearing thigh, disappearing calf, disappearing legs, missing fingers, fused fingers, abnormal eye proportion, Abnormal hands, abnormal legs, abnormal feet,  abnormal fingers,cloned face,cloned body",
     
 )
+
+ABSOLUTE_REALITY = GetImgTheme(
+    name="absolute_reality_v1_8_1",
+    model="absolute-reality-v1-8-1",
+    #prompt_prefix="photorealistic, ",
+    #prompt_suffix=", realistic, highly detailed,highres, RAW,8k",
+    negative_prompt_prefix="watermark, text, font, signage,deformed,airbrushed, blurry,bad anatomy, disfigured, poorly drawn face, mutated, extra limb, ugly, poorly drawn hands, missing limb, floating limbs, disconnected limbs, disconnected head, malformed hands, long neck, mutated hands and fingers, bad hands, missing fingers, cropped, worst quality, low quality, mutation, poorly drawn, huge calf, bad hands, fused hand, missing hand, disappearing arms, disappearing thigh, disappearing calf, disappearing legs, missing fingers, fused fingers, abnormal eye proportion, Abnormal hands, abnormal legs, abnormal feet,  abnormal fingers,cloned face,cloned body",
+    custom_generate=True,
+
+)
+DARK_SUSHI_MIX = GetImgTheme(
+    name="dark_sushi_mix_v2_25",
+    model="dark-sushi-mix-v2-25",
+    prompt_prefix="masterpiece, best quality, very aesthetic, absurdres, ",
+    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name,",
+    custom_generate=True,
+)
+ARCANE_DIFFUSION = GetImgTheme(
+    name="arcane_diffusion",
+    model="arcane_diffusion",
+    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name,",
+    custom_generate=True,
+)
+
+VAN_GOGH_DIFFUSION = GetImgTheme(
+    name="van_gogh_diffusion",
+    model="van-gogh-diffusion",
+    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name,",
+    custom_generate=True,
+)
+
+NEVER_ENDING_DREAM = GetImgTheme(
+    name="neverending_dream",
+    model="neverending-dream",
+    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name,",
+    custom_generate=True,
+)
+
+MO_DI_DIFFUSION = GetImgTheme(
+    name="mo_di_diffusion",
+    model="mo-di-diffusion",
+    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name,",
+    custom_generate=True,
+)
+
+
+SYNTHWAVE_PUNK_V2 = GetImgTheme(
+    name="synthwave_punk_v2",
+    model="synthwave-punk-v2",
+    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name,",
+    custom_generate=True,
+)
+
+DREAM_SHAPER_v8 = GetImgTheme(
+    name="dream_shaper_v8",
+    model="dream-shaper-v8",
+    negative_prompt_prefix="worst quality, low quality, normal quality, bad quality, poor quality, lowres, extra fingers, missing fingers, poorly rendered hands, mutation, deformed iris, deformed pupils, deformed limbs, missing limbs, amputee, amputated limbs",
+    custom_generate=True,
+)
+
+BETTER_THAN_WORDS_SDXL_NSFW = CustomStableDiffusionTheme(
+    name="better_than_words_sdxl_nsfw",
+    #prompt_prefix="photorealistic, ",
+    #prompt_suffix=", realistic, highly detailed,highres, RAW,8k",
+    model=
+    "https://civitai.com/api/download/models/233092?type=Model&format=SafeTensor&size=full&fp=fp16",
+    model_architecture="sdxl",
+    negative_prompt_prefix="watermark, text, font, signage,deformed,airbrushed, blurry,bad anatomy, disfigured, poorly drawn face, mutated, extra limb, ugly, poorly drawn hands, missing limb, floating limbs, disconnected limbs, disconnected head, malformed hands, long neck, mutated hands and fingers, bad hands, missing fingers, cropped, worst quality, low quality, mutation, poorly drawn, huge calf, bad hands, fused hand, missing hand, disappearing arms, disappearing thigh, disappearing calf, disappearing legs, missing fingers, fused fingers, abnormal eye proportion, Abnormal hands, abnormal legs, abnormal feet,  abnormal fingers",
+    num_inference_steps=30,
+    guidance_scale=5,
+    clip_skip=2,
+    scheduler="DPM++ 2M SDE",
+    image_size="portrait_4_3",#'{\"height\": 1152,\"width\":896 }',#"portrait_4_3",
+    custom_generate=True
+)
+
+LUSTIFY_SDXL_NSFW = CustomStableDiffusionTheme(
+    name="lustify_sdxl_nsfw",
+    #prompt_prefix="photorealistic, ",
+    #prompt_suffix=", realistic, highly detailed,highres, RAW,8k",
+    model=
+    "https://civitai.com/api/download/models/233092?type=Model&format=SafeTensor&size=full&fp=fp16",
+    model_architecture="sdxl",
+    negative_prompt_prefix="watermark, text, font, signage,deformed,airbrushed, blurry,bad anatomy, disfigured, poorly drawn face, mutated, extra limb, ugly, poorly drawn hands, missing limb, floating limbs, disconnected limbs, disconnected head, malformed hands, long neck, mutated hands and fingers, bad hands, missing fingers, cropped, mutation, poorly drawn, huge calf, bad hands, fused hand, missing hand, disappearing arms, disappearing thigh, disappearing calf, disappearing legs, missing fingers, fused fingers, abnormal eye proportion, Abnormal hands, abnormal legs, abnormal feet,  abnormal fingers",
+    num_inference_steps=30,
+    guidance_scale=5,
+    clip_skip=2,
+    scheduler="DPM++ 2M SDE",
+    image_size="portrait_4_3",#'{\"height\": 1152,\"width\":896 }',#"portrait_4_3",
+    custom_generate=True
+)
+
+SUZANNES_SDXL_NSFW = CustomStableDiffusionTheme(
+    name="suzannesxl_nsfw",
+    #prompt_prefix="photorealistic, ",
+    #prompt_suffix=", realistic, highly detailed,highres, RAW,8k",
+    model=
+    "https://civitai.com/api/download/models/400093?type=Model&format=SafeTensor&size=pruned&fp=fp16",
+    model_architecture="sdxl",
+    negative_prompt_prefix="Watermark, Text, censored, deformed, bad anatomy, disfigured, poorly drawn face, mutated, extra limb, ugly, poorly drawn hands, missing limb, floating limbs, disconnected limbs, disconnected head, malformed hands, long neck, mutated hands and fingers, bad hands, missing fingers, cropped, worst quality, low quality, mutation, poorly drawn, huge calf, bad hands, fused hand, missing hand, disappearing arms, disappearing thigh, disappearing calf, disappearing legs, missing fingers, fused fingers, abnormal eye proportion, Abnormal hands, abnormal legs, abnormal feet,  abnormal fingers",
+    num_inference_steps=30,
+    guidance_scale=5,
+    clip_skip=2,
+    scheduler="DPM++ 2M SDE",
+    image_size="portrait_4_3",#'{\"height\": 1152,\"width\":896 }',#"portrait_4_3",
+    custom_generate=True
+)
+
 OMNIGEN_SDXL_NSFW = CustomStableDiffusionTheme(
     name="omnigen_sdxl_nsfw",
-    prompt_prefix="",
+    #prompt_prefix="photorealistic, ",   
+    #prompt_suffix=", realistic, highly detailed,highres, RAW,8k",
     model=
-    "https://civitai.com/api/download/models/228559?type=Model&format=SafeTensor&size=pruned&fp=fp16",
+"https://civitai.com/api/download/models/228559?type=Model&format=SafeTensor&size=pruned&fp=fp16",
     model_architecture="sdxl",
-    negative_prompt_prefix="missing limbs, worst quality, close-up",
+    negative_prompt_prefix="watermark, text, font, signage,deformed,airbrushed, blurry,bad anatomy, disfigured, poorly drawn face, mutated, extra limb, ugly, poorly drawn hands, missing limb, floating limbs, disconnected limbs, disconnected head, malformed hands, long neck, mutated hands and fingers, bad hands, missing fingers, cropped, worst quality, low quality, mutation, poorly drawn, huge calf, bad hands, fused hand, missing hand, disappearing arms, disappearing thigh, disappearing calf, disappearing legs, missing fingers, fused fingers, abnormal eye proportion, Abnormal hands, abnormal legs, abnormal feet,  abnormal fingers",
     num_inference_steps=30,
-    guidance_scale=7,
+    guidance_scale=5,
     clip_skip=2,
-    scheduler="DPM++ 2M Karras",
+    scheduler="DPM++ 2M SDE",
     image_size="portrait_4_3",
-    custom_generate=True)
+    custom_generate=True
+)
 
 INIVERSE_MIX_SDXL_NSFW = CustomStableDiffusionTheme(
     name="iniverse_mix_sdxl_nsfw",
-    prompt_prefix="",
+    #prompt_prefix="photorealistic, ",
+    #prompt_suffix=", realistic, highly detailed,highres, RAW,8k",
     model=
     "https://civitai.com/api/download/models/294706",
     model_architecture="sdxl",
-    negative_prompt_prefix="missing limbs, worst quality, close-up",
+    negative_prompt_prefix="watermark, text, font, signage,deformed,airbrushed, blurry,bad anatomy, disfigured, poorly drawn face, mutated, extra limb, ugly, poorly drawn hands, missing limb, floating limbs, disconnected limbs, disconnected head, malformed hands, long neck, mutated hands and fingers, bad hands, missing fingers, cropped, worst quality, low quality, mutation, poorly drawn, huge calf, bad hands, fused hand, missing hand, disappearing arms, disappearing thigh, disappearing calf, disappearing legs, missing fingers, fused fingers, abnormal eye proportion, Abnormal hands, abnormal legs, abnormal feet,  abnormal fingers",
     num_inference_steps=30,
-    guidance_scale=7,
+    guidance_scale=5,
     clip_skip=2,
-    scheduler="DPM++ 2M Karras",
+    scheduler="DPM++ 2M SDE",
     image_size="portrait_4_3",
     custom_generate=True
 )
 
 ALBEDO_SDXL_NSFW = CustomStableDiffusionTheme(
     name="albedo_sdxl_nsfw",
-    prompt_prefix="",
+    #prompt_prefix="photorealistic, ",
+    #prompt_suffix=", realistic, highly detailed,highres, RAW,8k",
     model=
     "https://civitai.com/api/download/models/281176?type=Model&format=SafeTensor&size=pruned&fp=fp16",
     model_architecture="sdxl",
-    negative_prompt_prefix="missing limbs, worst quality, close-up",
-    num_inference_steps=30,
-    guidance_scale=7,
+    negative_prompt_prefix="watermark, text, font, signage,deformed,airbrushed, blurry,bad anatomy, disfigured, poorly drawn face, mutated, extra limb, ugly, poorly drawn hands, missing limb, floating limbs, disconnected limbs, disconnected head, malformed hands, long neck, mutated hands and fingers, bad hands, missing fingers, cropped, worst quality, low quality, mutation, poorly drawn, huge calf, bad hands, fused hand, missing hand, disappearing arms, disappearing thigh, disappearing calf, disappearing legs, missing fingers, fused fingers, abnormal eye proportion, Abnormal hands, abnormal legs, abnormal feet,  abnormal fingers",
+    num_inference_steps=40,
+    guidance_scale=6,
     clip_skip=2,
-    scheduler="DPM++ 2M Karras",
+    scheduler="DPM++ 2M SDE",
     image_size="portrait_4_3",
     custom_generate=True)
 
 ANYTHINGXL_SDXL_NSFW = CustomStableDiffusionTheme(
     name="anythingxl_sdxl_nsfw",
-    prompt_prefix="",
+    prompt_prefix="masterpiece, best quality, very aesthetic, absurdres, ",
     model=
     "https://civitai.com/api/download/models/384264?type=Model&format=SafeTensor&size=full&fp=fp16",
     model_architecture="sdxl",
-    negative_prompt_prefix="missing limbs, worst quality, close-up",
-    num_inference_steps=30,
-    guidance_scale=7,
+    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name,airbrushed",
+    num_inference_steps=28,
+    guidance_scale=6,
     clip_skip=2,
-    scheduler="DPM++ 2M Karras",
+    scheduler="Euler A",
     image_size="portrait_4_3",
     custom_generate=True)
 
 ANIMAGINE_SDXL_NSFW = CustomStableDiffusionTheme(
     name="animagine_sdxl_nsfw",
-    prompt_prefix="",
+    prompt_prefix="masterpiece, best quality, very aesthetic, absurdres, ",
     model=
     "https://civitai.com/api/download/models/293564?type=Model&format=SafeTensor&size=full&fp=fp32",
     model_architecture="sdxl",
-    negative_prompt_prefix="missing limbs, worst quality, close-up",
-    num_inference_steps=30,
-    guidance_scale=7,
+    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name,",
+    num_inference_steps=28,
+    guidance_scale=6,
     clip_skip=2,
-    scheduler="DPM++ 2M Karras",
+    scheduler="Euler A",
     image_size="portrait_4_3",
     custom_generate=True)
 
 CLEARHUNG_ANIME_SDXL_NSFW = CustomStableDiffusionTheme(
     name="clearhung_anime_sdxl_nsfw",
-    prompt_prefix="",
+    prompt_prefix="masterpiece, best quality, very aesthetic, absurdres, ",
     model=
     "https://civitai.com/api/download/models/156375",
     model_architecture="sdxl",
-    negative_prompt_prefix="missing limbs, worst quality, close-up",
-    num_inference_steps=30,
-    guidance_scale=7,
+    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name,",
+    num_inference_steps=28,
+    guidance_scale=6,
     clip_skip=2,
-    scheduler="DPM++ 2M Karras",
+    scheduler="Euler A",
     image_size="portrait_4_3",
     custom_generate=True)
 
 HASSAKU_SDXL_NSFW = CustomStableDiffusionTheme(
     name="hassaku_sdxl_nsfw",
-    prompt_prefix="",
+    prompt_prefix="masterpiece, best quality, very aesthetic, absurdres, ",
     model=
     "https://civitai.com/api/download/models/378499",
     model_architecture="sdxl",
-    negative_prompt_prefix="missing limbs, worst quality, close-up",
-    num_inference_steps=30,
-    guidance_scale=7,
+    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name,",
+    num_inference_steps=28,
+    guidance_scale=6,
     clip_skip=2,
-    scheduler="DPM++ 2M Karras",
+    scheduler="Euler A",
     image_size="portrait_4_3",
     custom_generate=True)
 
 ANIMEMIX_SDXL_NSFW = CustomStableDiffusionTheme(
     name="animemix_sdxl_nsfw",
-    prompt_prefix="",
+    prompt_prefix="masterpiece, best quality, very aesthetic, absurdres, ",
     model=
     "https://civitai.com/api/download/models/303526?type=Model&format=SafeTensor&size=full&fp=fp16",
     model_architecture="sdxl",
-    negative_prompt_prefix="missing limbs, worst quality, close-up",
-    num_inference_steps=30,
-    guidance_scale=7,
+    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name,",
+    num_inference_steps=28,
+    guidance_scale=6,
     clip_skip=2,
-    scheduler="DPM++ 2M Karras",
+    scheduler="Euler A",
     image_size="portrait_4_3",
     custom_generate=True)
 
 DEEPHENTAI_SDXL_NSFW = CustomStableDiffusionTheme(
     name="deephentai_sdxl_nsfw",
-    prompt_prefix="",
+    prompt_prefix="masterpiece, best quality, very aesthetic, absurdres, ",
     model=
     "https://civitai.com/api/download/models/286821",
     model_architecture="sdxl",
-    negative_prompt_prefix="missing limbs, worst quality, close-up",
-    num_inference_steps=30,
+    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name,",
+    num_inference_steps=28,
     guidance_scale=7,
     clip_skip=2,
-    scheduler="DPM++ 2M Karras",
+    scheduler="Euler A",
+    image_size="portrait_4_3",
+    custom_generate=True)
+
+STABLEDIFFUSION_SDXL = CustomStableDiffusionTheme(
+    name="stable_diffusion_1_5",
+    prompt_prefix="best quality, 4k, high resolution, photography, ",
+    model=
+    "stabilityai/stable-diffusion-xl-base-1.0",
+    model_architecture="sdxl",
+    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name,",
+    num_inference_steps=28,
+    guidance_scale=7,
+    clip_skip=2,
+    scheduler="Euler A",
     image_size="portrait_4_3",
     custom_generate=True)
 
@@ -348,10 +489,10 @@ REALISTIC_VISION = StableDiffusionTheme(
     model_architecture="sd",
     negative_prompt_prefix=
     "cartoon, painting, illustration, (worst quality, low quality, normal quality:2)",
-    num_inference_steps=40,
+    num_inference_steps=30,
     guidance_scale=5,
-    scheduler="DPM++ 2M Karras",
-    clip_skip=0,
+    scheduler="DPM++ 2M SDE",
+    clip_skip=2,
 )
 
 
@@ -498,7 +639,20 @@ PREMADE_THEMES = [
     HASSAKU_SDXL_NSFW,
     DEEPHENTAI_SDXL_NSFW,
     ANYTHINGXL_SDXL_NSFW,
-    REALISTIC_VISION_V3
+    REALISTIC_VISION_V3,
+    BETTER_THAN_WORDS_SDXL_NSFW,
+    FLUX_WITH_LORA,
+    ABSOLUTE_REALITY,
+    DARK_SUSHI_MIX,
+    ARCANE_DIFFUSION,
+    NEVER_ENDING_DREAM,
+    MO_DI_DIFFUSION,
+    SYNTHWAVE_PUNK_V2,
+    DREAM_SHAPER_v8,
+    VAN_GOGH_DIFFUSION,
+    STABLEDIFFUSION_SDXL,
+    SUZANNES_SDXL_NSFW,
+    LUSTIFY_SDXL_NSFW
 ]
 
 DEFAULT_THEME = ALBEDO_SDXL_NSFW

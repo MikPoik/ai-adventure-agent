@@ -33,7 +33,7 @@ from utils.generation_utils import (
     generate_quest_arc,
     send_story_generation,
 )
-from steamship.data import TagKind
+from steamship.data import TagKind, tags
 from steamship.data.tags.tag_constants import ChatTag, RoleTag, TagValueKey
 from utils.tags import QuestTag,TagKindExtensions
 from utils.tags import QuestIdTag
@@ -199,6 +199,8 @@ class OnboardingAgent(InterruptiblePythonAgent):
             quest_description = game_state.quest_arc[len(game_state.quests) - 1]
         if server_settings.fixed_quest_arc is not None:
             game_state.quest_arc = server_settings.fixed_quest_arc
+
+        last_user_prompt = ""
         
         if not game_state.chat_history_for_onboarding_complete:
             #logging.warning("Adding onboarding message")
@@ -206,13 +208,16 @@ class OnboardingAgent(InterruptiblePythonAgent):
             quests_description = self._get_quests_description(game_state.quest_arc)
             
             onboarding_message = ""
+            
+            
             if server_settings.chat_mode:
                 onboarding_message = game_state.onboarding_message.format(
                     player_name=game_state.player.name,
                     player_description=game_state.player.description,
                     player_appearance=game_state.player.appearance,
                     player_personality=game_state.player.personality,
-                    player_background=game_state.player.background,)   
+                    player_background=game_state.player.background,
+                    tags=game_state.tags)   
                 #logging.warning(onboarding_message)
             else:
                 onboarding_message = textwrap.dedent(
@@ -258,6 +263,25 @@ class OnboardingAgent(InterruptiblePythonAgent):
                     ),
                 ],
             )
+
+            if context.chat_history.last_user_message and context.chat_history.last_user_message.text != "":
+                last_user_prompt=context.chat_history.last_user_message.text
+            if True:
+                context.chat_history.append_user_message(
+                    text=f"From now on you are {game_state.player.name}, always stay in character.",
+                    tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
+    
+                )
+                context.chat_history.append_assistant_message(
+                    text=f"Sure! I will now embody {game_state.player.name}.",
+                    tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
+    
+                )
+                context.chat_history.append_user_message(
+                    text=f"Let's begin role-play",
+                    tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
+    
+                )
             if game_state.player.seed_message:
                 #logging.warning(f"Appending seed message: {game_state.player.seed_message}")
                 context.chat_history.append_assistant_message(
@@ -273,15 +297,9 @@ class OnboardingAgent(InterruptiblePythonAgent):
                             kind=TagKindExtensions.CHARACTER,
                             name=CharacterTag.INTRODUCTION_PROMPT,
                         ),
-                        Tag(
-                            kind=TagKindExtensions.INSTRUCTIONS,
-                            name=InstructionsTag.QUEST,
-                        ),
                         QuestIdTag(QuestTag.CHAT_QUEST)
                         ],
-                    
 
-                    
                 )
                 #logging.warning(f"Seed message: {game_state.player.seed_message}")
                 
@@ -290,11 +308,8 @@ class OnboardingAgent(InterruptiblePythonAgent):
         game_state.onboarding_agent_has_completed = True
         prompt = f"{player.name} arrives at camp."
         
-        if server_settings.auto_start_chat_mode:
-            if context.chat_history.last_user_message and context.chat_history.last_user_message.text != "":
-                prompt=context.chat_history.last_user_message.text
-            else:
-                prompt="Im here."
+        if server_settings.auto_start_chat_mode:            
+            prompt=last_user_prompt if last_user_prompt != "" else "Im here."
             chat_tool = StartChatQuestTool() #endless "chat" quest
             chat_tool.start_chat_quest(game_state,context)            
         elif server_settings.auto_start_first_quest:

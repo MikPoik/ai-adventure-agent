@@ -201,6 +201,11 @@ DEFAULT_THEMES = [{
     "label": "Animagine SDXL nsfw",
     "imageSample": "/image_samples/realistic_vision.png",
 },
+ {
+     "value": "better_than_words_sdxl_nsfw",
+     "label": "Better Than Words SDXL nsfw",
+     "imageSample": "/image_samples/realistic_vision.png",
+ }
 ]
 
 
@@ -375,6 +380,7 @@ class ServerSettings(BaseModel):
         description="The reasoning model to use for generating the adventure.",
         type="string"
     )
+    
     # Language Generation Settings - Story telling
     #Match list with context_utils.py model list
     default_story_model: str = SettingField(
@@ -391,10 +397,7 @@ class ServerSettings(BaseModel):
         }, {
             "value": "gpt-4",
             "label": "GPT 4",
-        }, {
-            "value": "NousResearch/Nous-Hermes-2-Mixtral-8x7B-SFT",
-            "label": "Nous-Hermes-2-Mixtral-8x7B-SFT",
-        }, {
+        },  {
             "value": "NousResearch/Nous-Hermes-2-Yi-34B",
             "label": "Nous-Hermes-2-Yi-34B",
         }, {
@@ -403,9 +406,6 @@ class ServerSettings(BaseModel):
         }, {
             "value": "mistralai/Mixtral-8x7B-Instruct-v0.1",
             "label": "Mixtral-8x7B-Instruct-v0.1",
-        }, {
-            "value": "teknium/OpenHermes-2p5-Mistral-7B",
-            "label": "OpenHermes Mistral 2.5",
         }, {
             "value": "cognitivecomputations/dolphin-2.5-mixtral-8x7b",
             "label": "Dolphin Mixtral 2.5",
@@ -416,9 +416,16 @@ class ServerSettings(BaseModel):
             "value": "gpt-3.5-turbo-0613",
             "label": "GPT 3.5",
         }, {
-            "value": "teknium/OpenHermes-2-Mistral-7B",
-            "label": "OpenHermes Mistral 2",
-        }],
+            "value" : "Sao10K/L3-70B-Euryale-v2.1",
+            "label" : "Sao10K/L3-70B-Euryale-v2.1"
+        }, {
+            "value" : "lizpreciatior/lzlv_70b_fp16_hf",
+            "label" : "lizpreciatior/lzlv_70b_fp16_hf"
+        }, {
+            "value": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+            "label": "Meta-Llama 3.1",
+        }
+                ],
     )
 
     allow_backup_story_models: bool = SettingField(
@@ -937,7 +944,7 @@ Can include descriptions of genre, characters, specific items and locations that
         description="The prompt for generating a chat image.",
         type="longtext",
         default=
-        "{description},[{appearance}]",
+        "{description}",
         variables_permitted={
             "appearance": "Appearance of the player.",
             "tone": "Description of the tone of the adventure.",
@@ -1082,6 +1089,9 @@ Can include descriptions of genre, characters, specific items and locations that
                     {
                         "label": "Deephentai (SDXL)",
                         "value": "https://civitai.com/api/download/models/286821"
+                    },
+                    {    "label": "Flux with LoRa",
+                        "value": "flux_with_lora"
                     }
                 ],
             },
@@ -1168,7 +1178,7 @@ Can include descriptions of genre, characters, specific items and locations that
         description=
         "The ID of the generation task which represents the terminus of generating the agent's own configuration.",
     )
-
+    #used for chat image generation too
     adventure_image_theme: Optional[str] = SettingField(
         # VALIDATED
         label="Adventure Image Theme",
@@ -1176,7 +1186,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="omnigen_sdxl_nsfw",
+        default="albedo_sdxl_nsfw",
         include_dynamic_options="image-themes",
     )
 
@@ -1187,7 +1197,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="omnigen_sdxl_nsfw",
+        default="flux_nsfw_lora",
         include_dynamic_options="image-themes",
     )
 
@@ -1198,7 +1208,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="omnigen_sdxl_nsfw",
+        default="flux_nsfw_lora",
         include_dynamic_options="image-themes",
     )
 
@@ -1209,7 +1219,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="omnigen_sdxl_nsfw",
+        default="flux_nsfw_lora",
         include_dynamic_options="image-themes",
     )
     #used for chat images also
@@ -1220,7 +1230,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="omnigen_sdxl_nsfw",
+        default="albedo_sdxl_nsfw",
         include_dynamic_options="image-themes",
     )
 
@@ -1251,7 +1261,7 @@ Can include descriptions of genre, characters, specific items and locations that
         min=-1,
     )
     chat_mode: Optional[bool] = SettingField(
-        default=False,
+        default=True,
         label="Use chat mode only",
         description="Use chat mode only,instead of questing",
         type="bool",
@@ -1263,7 +1273,7 @@ Can include descriptions of genre, characters, specific items and locations that
         type="bool",
     )
     enable_images_in_chat: Optional[bool] = SettingField(
-        default=False,
+        default=True,
         label="Enable images in chat",
         description="Enable images in chat",
         type="bool",

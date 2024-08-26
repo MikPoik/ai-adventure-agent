@@ -101,6 +101,7 @@ class QuestTag(str, Enum):
     IS_SOLUTION_ATTEMPT = "is_solution_attempt"
     CHAT_QUEST = "chat-quest"
     IMAGE_DESCRIPTION_PROMPT = "image_description_prompt"
+    IS_IMAGE_REQUEST = "is_image_request"
 
 
 class ItemTag(str, Enum):

@@ -8,9 +8,10 @@ from steamship.agents.schema import AgentContext
 from steamship.data import TagValueKey
 
 from generators.image_generator import ImageGenerator
-from schema.image_theme import StableDiffusionTheme
+from schema.image_theme import GetImgTheme, StableDiffusionTheme
 from schema.objects import Item
 from utils.context_utils import get_game_state, get_server_settings, get_theme
+from utils.generation_utils import print_log
 from utils.tags import (
     CampTag,
     CharacterTag,
@@ -32,7 +33,7 @@ class GetimgAiImageGenerator(ImageGenerator):
     version: str = "1.0.2"
     plugin_instance: Optional[PluginInstance] = None
 
-    def get_theme(self, theme_name: str, context) -> StableDiffusionTheme:
+    def get_theme(self, theme_name: str, context) -> GetImgTheme:
         #server_settings = get_server_settings(context)
         theme = get_theme(theme_name, context)
         if theme.is_dalle:
@@ -40,7 +41,7 @@ class GetimgAiImageGenerator(ImageGenerator):
                 f"Theme {theme_name} is DALL-E but this is the SD Generator"
             )
         d = theme.dict()
-        return StableDiffusionTheme.parse_obj(d)
+        return GetImgTheme.parse_obj(d)
 
     def _get_plugin_instance(self, context: AgentContext):
         self.generator_plugin_config["api_key"] = context.metadata[_GETIMG_AI_API_KEY]
@@ -75,16 +76,16 @@ class GetimgAiImageGenerator(ImageGenerator):
 
         options = {
             "model": theme.model,
-            "width": 512,
-            "height": 768,
-            "steps": 30,
-            "guidance": 7,
+            "width": theme.width,
+            "height": theme.height,
+            "steps": theme.num_inference_steps,
+            "guidance": theme.guidance_scale,
             "negative_prompt":negative_prompt
         }
         #print(options)
         start = time.perf_counter()
         #logging.warning("Image theme: " + str(theme))
-        #logging.warning("Generating image for Getimg: "+str(prompt)+"\nNegative prompt: "+str(negative_prompt))
+        print_log("Generating image for Getimg: "+str(prompt)+"\nNegative prompt: "+str(negative_prompt))
         task = sd.generate(
             text=prompt,
             tags=tags,
@@ -125,7 +126,7 @@ class GetimgAiImageGenerator(ImageGenerator):
                 "description": item.description,
                 "visual_description": item.visual_description,
             },
-            image_size="square_hd",
+            image_size="portrait_4_3",
             tags=tags,
         )
         return task

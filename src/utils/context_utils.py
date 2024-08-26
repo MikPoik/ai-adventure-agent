@@ -29,9 +29,9 @@ from steamship.utils.kv_store import KeyValueStore
 
 from generators.cascading_plugin import CascadingPlugin
 from schema.game_state import GameState
-from schema.image_theme import DEFAULT_THEME, PREMADE_THEMES, CustomStableDiffusionTheme, GetImgTheme, ImageTheme
+from schema.image_theme import DEFAULT_THEME, PREMADE_THEMES, CustomStableDiffusionTheme, FluxTheme, GetImgTheme, ImageTheme
 from schema.server_settings import ServerSettings
-from utils.tags import QuestIdTag
+from utils.tags import QuestIdTag,QuestTag
 from utils.moderation_utils import mark_block_as_excluded
 
 _STORY_GENERATOR_KEY = "story-generator"
@@ -47,7 +47,12 @@ _GAME_STATE_KEY = "user-settings"
 _TOGETHERAI_API_KEY = "togetherai-api-key"
 _FALAI_API_KEY = "falai_api_key"
 _GETIMG_AI_API_KEY = "getimg_ai_api_key"
+_DEEPINFRA_API_KEY = "deepinfra_api_key"
 
+def with_deepinfra_key(api_key: str, context: AgentContext) -> AgentContext:
+    context.metadata[_DEEPINFRA_API_KEY] = api_key
+    return context
+    
 def with_getimg_ai_key(api_key: str, context: AgentContext) -> AgentContext:
     context.metadata[_GETIMG_AI_API_KEY] = api_key
     return context
@@ -104,11 +109,13 @@ def get_story_text_generator(
             "cognitivecomputations/dolphin-2.5-mixtral-8x7b",
             "Gryphe/MythoMax-L2-13b",
             "gpt-3.5-turbo-0613",
-            "teknium/OpenHermes-2-Mistral-7B"
+            "teknium/OpenHermes-2-Mistral-7B",
+            "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
         ]
+        deepinfra_models = ["Sao10K/L3-70B-Euryale-v2.1","lizpreciatior/lzlv_70b_fp16_hf"]
 
         model_name = server_settings._select_model(
-            open_ai_models + replicate_models + together_ai_models,
+            open_ai_models + replicate_models + together_ai_models + deepinfra_models,
             default=server_settings.default_story_model,
             preferred=preferences.narration_model,
         )
@@ -132,8 +139,11 @@ def get_story_text_generator(
         elif model_name in together_ai_models:
             plugin_handle = "together-ai-generator"
             version = "1.0.2"
-            config[
-                "api_key"] = context.metadata[_TOGETHERAI_API_KEY]
+            config["api_key"] = context.metadata[_TOGETHERAI_API_KEY]
+        elif model_name in deepinfra_models:
+            plugin_handle = "deepinfra-generator"
+            version = "1.0.0"
+            config["api_key"] = context.metadata[_DEEPINFRA_API_KEY]
         
         #logging.warning("model: " + model_name)
         #logging.warning("plugin_handle: " + plugin_handle)
@@ -182,17 +192,19 @@ def get_reasoning_generator(
             "cognitivecomputations/dolphin-2.5-mixtral-8x7b",
             "Gryphe/MythoMax-L2-13b",
             "gpt-3.5-turbo-0613",
-            "teknium/OpenHermes-2-Mistral-7B"
+            "teknium/OpenHermes-2-Mistral-7B",
+            "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
         ]
+        deepinfra_models = ["Sao10K/L3-70B-Euryale-v2.1","lizpreciatior/lzlv_70b_fp16_hf","mistralai/Mixtral-8x7B-Instruct-v0.1"]
     
         model_name = server_settings._select_model(
-            open_ai_models + replicate_models + together_ai_models,
-            default=server_settings.default_story_model,
+            open_ai_models + replicate_models + together_ai_models + deepinfra_models,
+            default=server_settings.default_reasoning_model,
             preferred=preferences.narration_model,
         )
         config = {
             "model": server_settings.default_reasoning_model,
-            "max_tokens": 150,
+            "max_tokens": 512,
             "temperature": server_settings.reasoning_temperature
         }
         plugin_handle = None
@@ -206,8 +218,13 @@ def get_reasoning_generator(
             plugin_handle = "together-ai-generator"
             version = "1.0.2"
             config[
-                "api_key"] = context.metadata[_TOGETHERAI_API_KEY]        
-        #logging.warning("model: " + model_name)
+                "api_key"] = context.metadata[_TOGETHERAI_API_KEY]     
+        elif model_name in deepinfra_models:
+            plugin_handle = "deepinfra-generator"
+            version = "1.0.0"
+            config[
+                "api_key"] = context.metadata[_DEEPINFRA_API_KEY]
+        #logging.warning("reasoning model: " + model_name)
         #logging.warning("plugin_handle: " + plugin_handle)
         generator = context.client.use_plugin(plugin_handle,
                                               config=config,
@@ -659,7 +676,7 @@ def get_theme(name: str, context: AgentContext) -> ImageTheme:
                     and server_settings.chat_mode else "")
 
     potential_themes = (server_settings.image_themes or []) + PREMADE_THEMES
-
+    
     if not get_by_model:
         for theme in potential_themes:
             if name == theme.name:
@@ -670,5 +687,26 @@ def get_theme(name: str, context: AgentContext) -> ImageTheme:
                 return theme
             elif isinstance(theme, GetImgTheme) and theme.model == get_by_model:   
                 return theme
+            elif isinstance(theme, FluxTheme) and theme.model == get_by_model:
+                return theme
 
     return DEFAULT_THEME
+
+
+def append_chat_intro_messages(context: AgentContext):
+    game_state = get_game_state(context)
+    context.chat_history.append_user_message(
+        text=f"From now on you are {game_state.player.name}, always stay in character.",
+        tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
+
+    )
+    context.chat_history.append_assistant_message(
+        text=f"Sure!",
+        tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
+
+    )
+    context.chat_history.append_user_message(
+        text=f"Let's begin role-play",
+        tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
+
+    )

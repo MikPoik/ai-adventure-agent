@@ -52,6 +52,12 @@ from utils.tags import (
 from utils.moderation_utils import is_block_excluded
 from steamship.cli.utils import is_in_replit
 
+def print_log(message: str):
+    if is_in_replit():
+        print("[LOG] "+message)
+    else:
+        logging.info(message)
+        
 def log_filtered_blocks(context, filter: ChatHistoryFilter, generation_for: str = "Generic"):
     """
     Logs the indices and texts of chat history blocks filtered by a given filter.
@@ -61,7 +67,7 @@ def log_filtered_blocks(context, filter: ChatHistoryFilter, generation_for: str 
     # Use the provided filter to get the filtered blocks
     filtered_blocks = filter.filter_blocks(chat_history_file=chat_history_file)
     # Log the details in a formatted way, excluding blocks marked as excluded
-    logging.warning(f"[{generation_for}] Filtered blocks details:")
+    print_log(f"[{generation_for}] Filtered blocks details:")
     for block, _ in filtered_blocks:
         if not is_block_excluded(block):
             logging.warning(f"Block Index: {block.index_in_file},Chat Role: {block.chat_role} Text: {block.text.strip()}")
@@ -128,7 +134,7 @@ def send_story_generation(prompt: str, quest_name: str,
             LastInventoryFilter(),
         ]),
         generation_for="Quest Content",
-        stop_tokens=["</s>", "<|im_end|>", "<|im_start|>"],
+        stop_tokens=["</s>", "<|im_end|>", "<|im_start|>","\n\n\n","USER:"],
     )
     #log_filtered_blocks(context, filter, "Quest Content")
     return block
@@ -197,9 +203,44 @@ def generate_is_solution_attempt(prompt: str, quest_name: str,
         output_tags=[],
         filter=filter,
         generation_for="Is a solution attempt",
-        stop_tokens=["</s>", "<|im_end|>", "<|im_start|>","\n\n","</confidence>"],
+        stop_tokens=["</s>", "<|im_end|>","\n"],
         new_file=True,
         streaming=False,
+    )
+    #log_filtered_blocks(context, filter, "Quest Content Generation")
+    return block
+
+def generate_is_image_request(prompt: str, quest_name: str,
+         context: AgentContext) -> Optional[Block]:
+    """Decides whether input is an attempt to request image."""
+    #print("prompt :"+prompt)
+    filter=UnionFilter([
+    TagFilter(tag_types=[
+    (TagKindExtensions.CHARACTER, CharacterTag.NAME),
+    (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
+    (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
+    (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
+    (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
+    (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
+    (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
+    ]),
+    QuestNameFilter(quest_name=quest_name),
+    LastInventoryFilter(),
+    ])
+    block = do_token_trimmed_generation(
+    context,
+    prompt,
+    prompt_tags=[
+    Tag(kind=TagKindExtensions.QUEST,
+    name=QuestTag.IS_IMAGE_REQUEST),
+    QuestIdTag(quest_name),
+    ],
+    output_tags=[],
+    filter=filter,
+    generation_for="Is a image request",
+    stop_tokens=["</s>", "<|im_end|>","\n\n","</result"],
+    new_file=True,
+    streaming=False,
     )
     #log_filtered_blocks(context, filter, "Quest Content Generation")
     return block
@@ -232,7 +273,7 @@ def generate_image_description(prompt: str, quest_name: str,
     output_tags=[],
     filter=filter,
     generation_for="Image description",
-    stop_tokens=["</s>", "<|im_end|>", "<|im_start|>","}\n"],
+    stop_tokens=["</s>", "<|im_end|>","\n\n<","\n<"],
     new_file=True,
     streaming=False,
     )
@@ -486,7 +527,11 @@ def do_generation(
     """Generates the inventory for a merchant"""
 
     generator = None
-    if generation_for.lower() =="is a solution attempt":
+    generation_for_reasoning = [
+        "is a image request",
+        "image description"
+    ]
+    if generation_for.lower() in generation_for_reasoning:
         generator = get_reasoning_generator(context)
     else:
         generator = get_story_text_generator(context)
@@ -514,7 +559,7 @@ def do_generation(
     # Intentionally reuse the filtering for the quest CONTENT
     block_indices = filter.filter_chat_history(
         chat_history_file=context.chat_history.file, filter_for=generation_for)
-    
+    #logging.warning(f"block_indices: {block_indices}")
     
     #Add only if in chat_mode and not generating for story
     if not "Quest Content" in generation_for or additional_context:
@@ -531,8 +576,10 @@ def do_generation(
     # don't pollute workspace with temporary/working files that contain data like: "LIKELY"
     append_output_to_file = False if not output_file_id else True
 
-    #logging.warning( f"current prompt({prompt_block.index_in_file}, {tokens(prompt_block)}): {prompt}")
-    logging.debug(f"selected blocks: {sorted(block_indices)}")
+    
+    server_settings = get_server_settings(context)
+    if  not server_settings.chat_mode:
+        block_indices = sorted(block_indices)
 
     task = generator.generate(
         tags=output_tags,
@@ -540,7 +587,7 @@ def do_generation(
         input_file_id=context.chat_history.file.id,
         output_file_id=output_file_id,
         streaming=streaming,
-        input_file_block_index_list=sorted(block_indices),
+        input_file_block_index_list=block_indices,
         options=options,
     )
     task.wait()
@@ -560,8 +607,6 @@ def await_streamed_block(block: Block, context: AgentContext) -> Block:
         time.sleep(0.4)
         block = Block.get(block.client, _id=block.id)
     
-    if block.is_text() and is_in_replit:
-        logging.warning(block.text)
     context.chat_history.file.refresh()
     return block
 
@@ -615,5 +660,5 @@ JSON:"""
         new_file=True,  # don't put this in the chat history. it is help content.
         streaming=False,
     )
-    logging.warning("Action choices: " + block.text)
+    print_log("Action choices: " + block.text)
     return block

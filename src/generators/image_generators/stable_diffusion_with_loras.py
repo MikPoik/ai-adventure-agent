@@ -20,6 +20,7 @@ from utils.tags import (
     StoryContextTag,
     TagKindExtensions,
 )
+from utils.generation_utils import print_log
 
 
 class StableDiffusionWithLorasImageGenerator(ImageGenerator):
@@ -78,7 +79,7 @@ class StableDiffusionWithLorasImageGenerator(ImageGenerator):
         #print(options)
         start = time.perf_counter()
         #logging.warning("Image theme: " + str(theme))
-        #logging.warning("Generating image for Fal: "+str(prompt)+"\nNegative prompt: "+str(negative_prompt))
+        print_log("Generating image for Fal: "+str(prompt)+"\nNegative prompt: "+str(negative_prompt))
         task = sd.generate(
             text=prompt,
             tags=tags,

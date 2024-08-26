@@ -8,9 +8,10 @@ from steamship.agents.schema import AgentContext
 from steamship.data import TagValueKey
 
 from generators.image_generator import ImageGenerator
-from schema.image_theme import CustomStableDiffusionTheme, StableDiffusionTheme
+from schema.image_theme import FluxTheme, StableDiffusionTheme
 from schema.objects import Item
 from utils.context_utils import get_game_state, get_server_settings, get_theme
+from utils.generation_utils import print_log
 from utils.tags import (
     CampTag,
     CharacterTag,
@@ -21,18 +22,18 @@ from utils.tags import (
     TagKindExtensions,
 )
 from utils.context_utils import _FALAI_API_KEY
-from utils.generation_utils import print_log
 
-class CustomStableDiffusionWithLorasImageGenerator(ImageGenerator):
-    PLUGIN_HANDLE: Final[str] = "fal-ai-image-generator"
+class FluxImageGenerator(ImageGenerator):
+    PLUGIN_HANDLE: Final[str] = "fal-ai-image-generator-dev"
     generator_plugin_config: dict = {
         "api_key":
-        "added_from_context"
+        "added_from_context",
+        "api_path": "fal-ai/flux-general"
     } 
     version: str = "1.0.5"
     plugin_instance: Optional[PluginInstance] = None
 
-    def get_theme(self, theme_name: str, context) -> CustomStableDiffusionTheme:
+    def get_theme(self, theme_name: str, context) -> FluxTheme:
         #server_settings = get_server_settings(context)
         theme = get_theme(theme_name, context)
         if theme.is_dalle:
@@ -40,16 +41,16 @@ class CustomStableDiffusionWithLorasImageGenerator(ImageGenerator):
                 f"Theme {theme_name} is DALL-E but this is the SD Generator"
             )
         d = theme.dict()
-        return CustomStableDiffusionTheme.parse_obj(d)
+        return FluxTheme.parse_obj(d)
 
     def _get_plugin_instance(self, context: AgentContext):
         self.generator_plugin_config["api_key"] = context.metadata[_FALAI_API_KEY]
         
         if self.plugin_instance is None:
-            self.plugin_instance = context.client.use_plugin(
-                plugin_handle=CustomStableDiffusionWithLorasImageGenerator.PLUGIN_HANDLE,
+            self.plugin_instance = context.client.use_plugin( #Need to update FAL plugin to support Flux api path!!
+                plugin_handle=FluxImageGenerator.PLUGIN_HANDLE,
                 config=self.generator_plugin_config,
-                version=self.version,
+                version=self.version                
             )
         return self.plugin_instance
 
@@ -71,29 +72,21 @@ class CustomStableDiffusionWithLorasImageGenerator(ImageGenerator):
 
         lora_list = list(map(lambda lora: {"path": lora}, theme.loras))
         lora_json_str = json.dumps(lora_list)
-        try:
-            image_size = json.loads(image_size)
-        except json.JSONDecodeError:
-            pass
+
         options = {
             #"seed": theme.seed,
-            "model_name": theme.model,
             "loras": json.loads(lora_json_str),
             "image_size": image_size,
             "num_inference_steps": theme.num_inference_steps,
             "guidance_scale": theme.guidance_scale,
-            "clip_skip": theme.clip_skip,
-            "scheduler": theme.scheduler,
-            "model_architecture": theme.model_architecture,
-            "negative_prompt": negative_prompt,
             "enable_safety_checker": False
         }
 
         start = time.perf_counter()
         #logging.warning("Image theme: " + str(theme))
-        print_log(f"Generating image for Custom Fal Theme {theme.name}: "+str(prompt)+"\nNegative prompt: "+str(negative_prompt))
+        print_log("Generating image for Flux: "+str(prompt))
         task = sd.generate(
-            text=prompt.strip(),
+            text=prompt,
             tags=tags,
             streaming=True,
             append_output_to_file=True,
@@ -286,7 +279,7 @@ class CustomStableDiffusionWithLorasImageGenerator(ImageGenerator):
                 "appearance" : appearance,
 
             },
-            image_size="portrait_4_3", #'{\"height\": 1152,\"width\":896 }'
+            image_size="portrait_4_3",
             tags=tags,
         )
         return task
