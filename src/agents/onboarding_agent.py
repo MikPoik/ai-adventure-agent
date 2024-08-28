@@ -22,6 +22,7 @@ from utils.context_utils import (
     get_game_state,
     get_server_settings,
     save_game_state,
+    append_chat_intro_messages
 )
 from utils.interruptible_python_agent import InterruptiblePythonAgent
 from utils.moderation_utils import mark_block_as_excluded
@@ -267,21 +268,7 @@ class OnboardingAgent(InterruptiblePythonAgent):
             if context.chat_history.last_user_message and context.chat_history.last_user_message.text != "":
                 last_user_prompt=context.chat_history.last_user_message.text
             if True:
-                context.chat_history.append_user_message(
-                    text=f"From now on you are {game_state.player.name}, always stay in character.",
-                    tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
-    
-                )
-                context.chat_history.append_assistant_message(
-                    text=f"Sure! I will now embody {game_state.player.name}.",
-                    tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
-    
-                )
-                context.chat_history.append_user_message(
-                    text=f"Let's begin role-play",
-                    tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
-    
-                )
+                append_chat_intro_messages(context)
             if game_state.player.seed_message:
                 #logging.warning(f"Appending seed message: {game_state.player.seed_message}")
                 context.chat_history.append_assistant_message(

@@ -37,6 +37,7 @@ from utils.generation_utils import (
     generate_is_solution_attempt,
     generate_likelihood_estimation,
     generate_quest_arc,
+    print_log,
     send_story_generation,
 )
 from utils.interruptible_python_agent import InterruptiblePythonAgent
@@ -198,7 +199,7 @@ class ChatAgent(InterruptiblePythonAgent):
             Environment Description,
             Mood/Atmosphere Description,
             Style,
-            Style Execution ("DSLR ,realistic, highly detailed,highres, RAW,8k" OR "amateur,phone photograph, grainy, analog, selfie" )
+            Style Execution (etc. "full body portrait, masterpiece ,realistic,skin texture,ultra detailed,highres, RAW,8k, selfie, self shot,depth of field" )
         ]
         }}
         
@@ -225,12 +226,13 @@ class ChatAgent(InterruptiblePythonAgent):
         Review the message from {game_state.player.name}: "{user_prompt_processed}".
         
         Task is to classify if a image should be generated in addition to the message.
-        Determine if the message contains any suggestion, gesture,action, intent,indication, or implication—directly or indirectly—that an image/selfie/picture is:
+        Determine if the message contains any suggestion, gesture,action, intent,indication, or implication that an image/selfie/picture is:
         - being described,
         - being sent,
         - about to be sent,
         - going to be taken,
         - going to snap selfie,
+        - showing a glimpse of,
         - or intended to be shown.
 
         Provide your response in the following format:
@@ -256,7 +258,7 @@ class ChatAgent(InterruptiblePythonAgent):
             #logging.warning(f"Image generation is disabled in server settings")
             return None
         response_plan = self.generate_plan(game_state, context, quest, user_prompt=response_text)
-
+        print_log("Image request: "+response_plan)
         if "true" not in response_plan.lower():
             #logging.warning("Response did not include image suggestion")
             return None

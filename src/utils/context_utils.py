@@ -103,16 +103,13 @@ def get_story_text_generator(
         together_ai_models = [
             "NousResearch/Nous-Hermes-2-Yi-34B",
             "NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",
-            "NousResearch/Nous-Hermes-2-Mixtral-8x7B-SFT",
+            
             "mistralai/Mixtral-8x7B-Instruct-v0.1",
-            "teknium/OpenHermes-2p5-Mistral-7B",
-            "cognitivecomputations/dolphin-2.5-mixtral-8x7b",
             "Gryphe/MythoMax-L2-13b",
             "gpt-3.5-turbo-0613",
-            "teknium/OpenHermes-2-Mistral-7B",
             "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
         ]
-        deepinfra_models = ["Sao10K/L3-70B-Euryale-v2.1","lizpreciatior/lzlv_70b_fp16_hf"]
+        deepinfra_models = ["Sao10K/L3-70B-Euryale-v2.1","lizpreciatior/lzlv_70b_fp16_hf","cognitivecomputations/dolphin-2.9.1-llama-3-70b",]
 
         model_name = server_settings._select_model(
             open_ai_models + replicate_models + together_ai_models + deepinfra_models,
@@ -696,17 +693,17 @@ def get_theme(name: str, context: AgentContext) -> ImageTheme:
 def append_chat_intro_messages(context: AgentContext):
     game_state = get_game_state(context)
     context.chat_history.append_user_message(
-        text=f"From now on you are {game_state.player.name}, always stay in character.",
+        text=f"From now on you are {game_state.player.name} in this story, always stay in character.",
         tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
 
     )
     context.chat_history.append_assistant_message(
-        text=f"Sure!",
+        text=f"Sure! I will now embody {game_state.player.name}.",
         tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
 
     )
     context.chat_history.append_user_message(
-        text=f"Let's begin role-play",
+        text=f"Now role-play with me.",
         tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
 
     )

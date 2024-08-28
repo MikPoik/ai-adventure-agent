@@ -134,7 +134,7 @@ def send_story_generation(prompt: str, quest_name: str,
             LastInventoryFilter(),
         ]),
         generation_for="Quest Content",
-        stop_tokens=["</s>", "<|im_end|>", "<|im_start|>","\n\n\n","USER:"],
+        stop_tokens=["</s>", "<|im_end|>","\n\n\n","USER:","\n#"],
     )
     #log_filtered_blocks(context, filter, "Quest Content")
     return block
@@ -168,7 +168,7 @@ def generate_likelihood_estimation(prompt: str, quest_name: str,
             LastInventoryFilter(),
         ]),
         generation_for="Dice Roll",
-        stop_tokens=["\n", "</s>", "<|im_end|>", "<|im_start|>"],
+        stop_tokens=["\n", "</s>", "<|im_end|>"],
         new_file=True,
         streaming=False,
     )
@@ -300,7 +300,7 @@ def generate_quest_summary(quest_name: str,
         ],
         filter=QuestNameFilter(quest_name=quest_name),
         generation_for="Quest Summary",
-        stop_tokens=["</s>", "<|im_end|>", "<|im_start|>"],
+        stop_tokens=["</s>", "<|im_end|>"],
     )
     return block
 
@@ -656,7 +656,7 @@ JSON:"""
             LastInventoryFilter(),
         ]),
         generation_for="Action Choices",
-        stop_tokens=["\n\n","</s>", "<|im_end|>", "<|im_start|>"],
+        stop_tokens=["\n\n","</s>", "<|im_end|>"],
         new_file=True,  # don't put this in the chat history. it is help content.
         streaming=False,
     )

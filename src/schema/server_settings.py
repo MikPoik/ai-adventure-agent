@@ -384,7 +384,7 @@ class ServerSettings(BaseModel):
     # Language Generation Settings - Story telling
     #Match list with context_utils.py model list
     default_story_model: str = SettingField(
-        default="NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",
+        default="Gryphe/MythoMax-L2-13b",
         label="Story LLM Model",
         description="Model used to generate story text.",
         type="select",
@@ -407,8 +407,8 @@ class ServerSettings(BaseModel):
             "value": "mistralai/Mixtral-8x7B-Instruct-v0.1",
             "label": "Mixtral-8x7B-Instruct-v0.1",
         }, {
-            "value": "cognitivecomputations/dolphin-2.5-mixtral-8x7b",
-            "label": "Dolphin Mixtral 2.5",
+            "value": "cognitivecomputations/dolphin-2.9.1-llama-3-70b",
+            "label": "Dolphin llama3 70b"
         }, {
             "value": "Gryphe/MythoMax-L2-13b",
             "label": "MythoMax-L2-13b",
@@ -1186,7 +1186,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="albedo_sdxl_nsfw",
+        default="realistic_vision_v3",
         include_dynamic_options="image-themes",
     )
 
@@ -1197,7 +1197,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="flux_nsfw_lora",
+        default="realistic_vision_v3",
         include_dynamic_options="image-themes",
     )
 
@@ -1208,7 +1208,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="flux_nsfw_lora",
+        default="realistic_vision_v3",
         include_dynamic_options="image-themes",
     )
 
@@ -1219,7 +1219,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="flux_nsfw_lora",
+        default="realistic_vision_v3",
         include_dynamic_options="image-themes",
     )
     #used for chat images also
@@ -1230,7 +1230,7 @@ Can include descriptions of genre, characters, specific items and locations that
         "Use a pre-made theme or add more in the **Image Themes** tab.",
         type="select",
         options=DEFAULT_THEMES,
-        default="albedo_sdxl_nsfw",
+        default="realistic_vision_v3",
         include_dynamic_options="image-themes",
     )
 

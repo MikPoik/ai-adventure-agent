@@ -133,7 +133,7 @@ class AdventureGameService(AgentService):
             description="Together AI API key defined",
         )
         falai_api_key: str = Field(
-            ":",
+            "",
             description="Falai API key defined",
         )
         getimg_ai_api_key: str = Field(
