@@ -18,11 +18,13 @@ from tools.start_quest_tool import StartQuestTool
 from tools.start_chat_quest_tool import StartChatQuestTool
 from utils.context_utils import (
     RunNextAgentException,
+    append_onboarding_message,
     await_ask,
     get_game_state,
     get_server_settings,
     save_game_state,
     append_chat_intro_messages
+    
 )
 from utils.interruptible_python_agent import InterruptiblePythonAgent
 from utils.moderation_utils import mark_block_as_excluded
@@ -203,24 +205,13 @@ class OnboardingAgent(InterruptiblePythonAgent):
 
         last_user_prompt = ""
         
-        if not game_state.chat_history_for_onboarding_complete:
-            #logging.warning("Adding onboarding message")
+        if not game_state.chat_history_for_onboarding_complete:            
             # TODO: We could save a lot of round trips by appending all these blocks at once.
             quests_description = self._get_quests_description(game_state.quest_arc)
             
             onboarding_message = ""
-            
-            
-            if server_settings.chat_mode:
-                onboarding_message = game_state.onboarding_message.format(
-                    player_name=game_state.player.name,
-                    player_description=game_state.player.description,
-                    player_appearance=game_state.player.appearance,
-                    player_personality=game_state.player.personality,
-                    player_background=game_state.player.background,
-                    tags=game_state.tags)   
-                #logging.warning(onboarding_message)
-            else:
+                        
+            if not server_settings.chat_mode:
                 onboarding_message = textwrap.dedent(
                     f"""\
                     Enter adventure game mode."
@@ -236,59 +227,16 @@ class OnboardingAgent(InterruptiblePythonAgent):
                     {server_settings.narrative_tone}"
                     {server_settings.narrative_voice}"
                     Do not disclose game mechanics to user.\
-                    """)
+                    """).rstrip()
+                game_state.onboarding_message = onboarding_message
                 
             
-            context.chat_history.append_system_message(
-                text=onboarding_message,
-                tags=[
-                    Tag(
-                        kind=TagKindExtensions.INSTRUCTIONS,
-                        name=InstructionsTag.ONBOARDING,
-                    ),
-                    Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.NAME),
-                    Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.BACKGROUND),
-                    Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.MOTIVATION),
-                    Tag(
-                        kind=TagKindExtensions.CHARACTER, name=CharacterTag.DESCRIPTION
-                    ),
-                    Tag(
-                        kind=TagKindExtensions.STORY_CONTEXT,
-                        name=StoryContextTag.BACKGROUND,
-                    ),
-                    Tag(
-                        kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.TONE
-                    ),
-                    Tag(
-                        kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.VOICE
-                    ),
-                ],
-            )
-
+            append_onboarding_message(context)
+            
             if context.chat_history.last_user_message and context.chat_history.last_user_message.text != "":
                 last_user_prompt=context.chat_history.last_user_message.text
             if True:
                 append_chat_intro_messages(context)
-            if game_state.player.seed_message:
-                #logging.warning(f"Appending seed message: {game_state.player.seed_message}")
-                context.chat_history.append_assistant_message(
-                    text=game_state.player.seed_message,
-                    tags=[                       
-                        Tag(
-                            kind=TagKindExtensions.CHARACTER,
-                            name=CharacterTag.SEED,
-                        ),
-                        Tag(kind=TagKindExtensions.CHARACTER,
-                            name=CharacterTag.INTRODUCTION),
-                        Tag(
-                            kind=TagKindExtensions.CHARACTER,
-                            name=CharacterTag.INTRODUCTION_PROMPT,
-                        ),
-                        QuestIdTag(QuestTag.CHAT_QUEST)
-                        ],
-
-                )
-                #logging.warning(f"Seed message: {game_state.player.seed_message}")
                 
             game_state.chat_history_for_onboarding_complete = True
 

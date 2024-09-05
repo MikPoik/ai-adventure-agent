@@ -40,7 +40,7 @@ from schema.characters import HumanCharacter
 from schema.game_state import ActiveMode
 from schema.server_settings import ServerSettings
 from utils.agent_service import AgentService
-from utils.context_utils import get_game_state, get_server_settings, save_game_state, save_server_settings, with_deepinfra_key
+from utils.context_utils import get_game_state, get_server_settings, save_game_state, save_server_settings, with_deepinfra_key, with_openai_key
 from utils.tags import TagKindExtensions
 from utils.context_utils import with_togetherai_key,with_falai_key,with_getimg_ai_key,with_deepinfra_key
 
@@ -124,7 +124,7 @@ class AdventureGameService(AgentService):
             description="[Optional] ElevenLabs voice ID (default: Adam)",
         )
         openai_api_key: str = Field(
-            "",
+            "sk-proj-",
             description=
             "An openAI API key to use. If left default, will use Steamship's API key.",
         )
@@ -229,6 +229,7 @@ class AdventureGameService(AgentService):
         context = with_falai_key(self.config.falai_api_key, context)
         context = with_getimg_ai_key(self.config.getimg_ai_api_key,context)
         context = with_deepinfra_key(self.config.deepinfra_api_key, context)
+        context = with_openai_key(self.config.openai_api_key, context)
 
 
         return context
@@ -415,12 +416,11 @@ if __name__ == "__main__":
         yaml_string = settings_file.read()
         server_settings = parse_yaml_raw_as(ServerSettings, yaml_string)
 
-    with open(basepath / "../example_content/velvet.yaml") as character_file:
+    with open(basepath / "../example_content/tests/delia.yaml") as character_file:
         yaml_string = character_file.read()
         character = parse_yaml_raw_as(HumanCharacter, yaml_string)
 
     with Steamship.temporary_workspace() as client:
-        
         repl = GameREPL(
             cast(AgentService, AdventureGameService),
             agent_package_config={},

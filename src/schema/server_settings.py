@@ -384,13 +384,16 @@ class ServerSettings(BaseModel):
     # Language Generation Settings - Story telling
     #Match list with context_utils.py model list
     default_story_model: str = SettingField(
-        default="Gryphe/MythoMax-L2-13b",
+        default="mistralai/Mistral-Nemo-Instruct-2407",
         label="Story LLM Model",
         description="Model used to generate story text.",
         type="select",
         options=[{
             "value": "gpt-3.5-turbo",
             "label": "GPT 3.5 Turbo",
+        }, {
+             "value": "gpt-4o-mini",
+             "label": "GPT 4o",
         }, {
             "value": "gpt-4-1106-preview",
             "label": "GPT 4 turbo preview",
@@ -413,7 +416,7 @@ class ServerSettings(BaseModel):
             "value": "Gryphe/MythoMax-L2-13b",
             "label": "MythoMax-L2-13b",
         }, {
-            "value": "gpt-3.5-turbo-0613",
+            "value": "gpt-3.5-turbo",
             "label": "GPT 3.5",
         }, {
             "value" : "Sao10K/L3-70B-Euryale-v2.1",
@@ -424,7 +427,14 @@ class ServerSettings(BaseModel):
         }, {
             "value": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
             "label": "Meta-Llama 3.1",
-        }
+        }, {
+            "value": "Austism/chronos-hermes-13b-v2",
+            "label": "Chronos Hermes 13b"
+        },
+         {
+             "value": "mistralai/Mistral-Nemo-Instruct-2407",
+             "label": "Mistral Nemo 12B"
+         }
                 ],
     )
 
@@ -471,7 +481,7 @@ class ServerSettings(BaseModel):
         type="float"
     )
     repetition_penalty:float = SettingField(
-        default=1.015,
+        default=1.01,
         label="Repetition Penalty",
         description="Repetition Penalty for the narrative generation.",
         type="float"
@@ -483,7 +493,7 @@ class ServerSettings(BaseModel):
         type="float"
     )
     presence_penalty:float = SettingField(
-        default=0.1,
+        default=0.01,
         label="Presence Penalty",
         description="Presence Penalty for the narrative generation.",
         type="float"

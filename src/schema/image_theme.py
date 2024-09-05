@@ -253,13 +253,13 @@ DARK_SUSHI_MIX = GetImgTheme(
     name="dark_sushi_mix_v2_25",
     model="dark-sushi-mix-v2-25",
     #prompt_prefix="masterpiece, best quality, very aesthetic, absurdres, ",
-    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name,",
+    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name",
     custom_generate=True,
 )
 ARCANE_DIFFUSION = GetImgTheme(
     name="arcane_diffusion",
     model="arcane_diffusion",
-    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name,",
+    negative_prompt_prefix="lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name",
     custom_generate=True,
 )
 
@@ -387,8 +387,8 @@ ALBEDO_SDXL_NSFW = CustomStableDiffusionTheme(
     "https://civitai.com/api/download/models/281176?type=Model&format=SafeTensor&size=pruned&fp=fp16",
     model_architecture="sdxl",
     negative_prompt_prefix="watermark, text, font, signage,deformed,airbrushed, blurry,bad anatomy, disfigured, poorly drawn face, mutated, extra limb, ugly, poorly drawn hands, missing limb, floating limbs, disconnected limbs, disconnected head, malformed hands, long neck, mutated hands and fingers, bad hands, missing fingers, cropped, mutation, poorly drawn, huge calf, bad hands, fused hand, missing hand, disappearing arms, disappearing thigh, disappearing calf, disappearing legs, missing fingers, fused fingers, abnormal eye proportion, Abnormal hands, abnormal legs, abnormal feet,  abnormal fingers",
-    num_inference_steps=40,
-    guidance_scale=6,
+    num_inference_steps=30,
+    guidance_scale=5,
     clip_skip=2,
     scheduler="DPM++ 2M SDE",
     image_size="portrait_4_3",

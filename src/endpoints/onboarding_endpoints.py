@@ -12,7 +12,7 @@ from generators.generator_context_utils import get_profile_image_generator
 from schema.game_state import ActiveMode, GameState
 
 # An instnace is a game instance.
-from utils.context_utils import RunNextAgentException, append_chat_intro_messages, get_game_state, save_game_state
+from utils.context_utils import RunNextAgentException, append_chat_intro_messages, append_onboarding_message, get_game_state, save_game_state
 from utils.error_utils import record_and_throw_unrecoverable_error
 from utils.generation_utils import generate_story_intro
 from utils.tags import QuestIdTag, SceneTag, TagKindExtensions,StoryContextTag,CharacterTag,InstructionsTag,QuestTag
@@ -184,7 +184,7 @@ class OnboardingMixin(PackageMixin):
             if description == "":
                 description = "N/A"
             if tags == "":
-                tags = "Fictional"
+                tags = "Fictional drama"
     
             context = self.agent_service.build_default_context()
             #onboarding_message = GameState.onboarding_message if hasattr(GameState, 'onboarding_message') else "Default onboarding message"
@@ -251,39 +251,7 @@ class OnboardingMixin(PackageMixin):
             game_state.tags = tags
             save_game_state(game_state, context)
 
-            onboarding_message = game_state.onboarding_message.format(
-                player_name=game_state.player.name,
-                player_description=game_state.player.description,
-                player_appearance=game_state.player.appearance,
-                player_personality=game_state.player.personality,
-                player_background=game_state.player.background,
-                tags=tags)
-
-            context.chat_history.append_system_message(
-                text=onboarding_message,
-                tags=[
-                    Tag(
-                        kind=TagKindExtensions.INSTRUCTIONS,
-                        name=InstructionsTag.ONBOARDING,
-                    ),
-                    Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.NAME),
-                    Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.BACKGROUND),
-                    Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.MOTIVATION),
-                    Tag(
-                        kind=TagKindExtensions.CHARACTER, name=CharacterTag.DESCRIPTION
-                    ),
-                    Tag(
-                        kind=TagKindExtensions.STORY_CONTEXT,
-                        name=StoryContextTag.BACKGROUND,
-                    ),
-                    Tag(
-                        kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.TONE
-                    ),
-                    Tag(
-                        kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.VOICE
-                    ),
-                ],
-            )
+            append_onboarding_message(context)
             
             return True
 
@@ -298,63 +266,10 @@ class OnboardingMixin(PackageMixin):
         try:            
             context = self.agent_service.build_default_context()
             game_state = get_game_state(context)
-            onboarding_message = game_state.onboarding_message.format(
-                player_name=game_state.player.name,
-                player_description=game_state.player.description,
-                player_appearance=game_state.player.appearance,
-                player_personality=game_state.player.personality,
-                player_background=game_state.player.background,
-                tags=game_state.tags)
 
-            context.chat_history.append_system_message(
-                text=onboarding_message,
-                tags=[
-                    Tag(
-                        kind=TagKindExtensions.INSTRUCTIONS,
-                        name=InstructionsTag.ONBOARDING,
-                    ),
-                    Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.NAME),
-                    Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.BACKGROUND),
-                    Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.MOTIVATION),
-                    Tag(
-                        kind=TagKindExtensions.CHARACTER, name=CharacterTag.DESCRIPTION
-                    ),
-                    Tag(
-                        kind=TagKindExtensions.STORY_CONTEXT,
-                        name=StoryContextTag.BACKGROUND,
-                    ),
-                    Tag(
-                        kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.TONE
-                    ),
-                    Tag(
-                        kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.VOICE
-                    ),
-                ],
-            )
-            if game_state.player.seed_message and game_state.player.seed_message != "":                
-                context.chat_history.append_assistant_message(
-                    text=game_state.player.seed_message,
-                    tags=[                       
-                        Tag(
-                            kind=TagKindExtensions.CHARACTER,
-                            name=CharacterTag.SEED,
-                        ),
-                        Tag(kind=TagKindExtensions.CHARACTER,
-                            name=CharacterTag.INTRODUCTION),
-                        Tag(
-                            kind=TagKindExtensions.CHARACTER,
-                            name=CharacterTag.INTRODUCTION_PROMPT,
-                        ),
-                        Tag(
-                            kind=TagKindExtensions.INSTRUCTIONS,
-                            name=InstructionsTag.QUEST,
-                        ),
-                        QuestIdTag(QuestTag.CHAT_QUEST)
-                        ],
-
-
-
-                )
+            append_onboarding_message(context)
+            append_chat_intro_messages(context)
+            
             return True
         except BaseException as e:
             context = self.agent_service.build_default_context()

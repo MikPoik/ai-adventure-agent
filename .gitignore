@@ -17,3 +17,4 @@ poetry.lock
 steamship.json
 .replit
 replit.nix
+example_content/tests/

@@ -91,7 +91,7 @@ class CustomStableDiffusionWithLorasImageGenerator(ImageGenerator):
 
         start = time.perf_counter()
         #logging.warning("Image theme: " + str(theme))
-        print_log(f"Generating image for Custom Fal Theme {theme.name}: "+str(prompt)+"\nNegative prompt: "+str(negative_prompt))
+        #print_log(f"Generating image for Custom Fal Theme {theme.name}: "+str(prompt)+"\nNegative prompt: "+str(negative_prompt))
         task = sd.generate(
             text=prompt.strip(),
             tags=tags,

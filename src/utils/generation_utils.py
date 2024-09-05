@@ -56,7 +56,7 @@ def print_log(message: str):
     if is_in_replit():
         print("[LOG] "+message)
     else:
-        logging.info(message)
+        logging.warning(message)
         
 def log_filtered_blocks(context, filter: ChatHistoryFilter, generation_for: str = "Generic"):
     """
@@ -134,7 +134,7 @@ def send_story_generation(prompt: str, quest_name: str,
             LastInventoryFilter(),
         ]),
         generation_for="Quest Content",
-        stop_tokens=["</s>", "<|im_end|>","\n\n\n","USER:","\n#"],
+        stop_tokens=["</s>", "<|im_end|>","\n\nUSER:","\n##"],
     )
     #log_filtered_blocks(context, filter, "Quest Content")
     return block
@@ -213,7 +213,7 @@ def generate_is_solution_attempt(prompt: str, quest_name: str,
 def generate_is_image_request(prompt: str, quest_name: str,
          context: AgentContext) -> Optional[Block]:
     """Decides whether input is an attempt to request image."""
-    #print("prompt :"+prompt)
+    #print_log("prompt :"+prompt)
     filter=UnionFilter([
     TagFilter(tag_types=[
     (TagKindExtensions.CHARACTER, CharacterTag.NAME),
@@ -238,7 +238,7 @@ def generate_is_image_request(prompt: str, quest_name: str,
     output_tags=[],
     filter=filter,
     generation_for="Is a image request",
-    stop_tokens=["</s>", "<|im_end|>","\n\n","</result"],
+    stop_tokens=["</s>", "<|im_end|>","\n\n","</result>"],
     new_file=True,
     streaming=False,
     )

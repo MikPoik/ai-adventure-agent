@@ -68,7 +68,7 @@ def patch_game_state(self, **kwargs) -> dict:
         game_state = get_game_state(context)
         print_log(f"PATCH /patch_game_state {kwargs}")
         for k, v in kwargs.items():
-            print_log(f"Updating server_settings attribute {k} from {getattr(game_state, k, 'NOT SET')} to {v}")
+            #print_log(f"Updating server_settings attribute {k} from {getattr(game_state, k, 'NOT SET')} to {v}")
             setattr(game_state, k, v)
         save_game_state(game_state, context)
         return game_state.dict()

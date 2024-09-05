@@ -11,6 +11,7 @@ from tools.end_quest_tool import EndQuestTool
 from tools.start_quest_tool import StartQuestTool
 from utils.context_utils import (
     append_chat_intro_messages,
+    append_onboarding_message,
     get_audio_narration_generator,
     get_game_state,
     get_server_settings,
@@ -99,63 +100,9 @@ class QuestMixin(PackageMixin):
 
         context.chat_history.clear()
         #Re-seed onboarding message
-        onboarding_message = game_state.onboarding_message.format(
-            player_name=game_state.player.name,
-            player_description=game_state.player.description,
-            player_appearance=game_state.player.appearance,
-            player_personality=game_state.player.personality,
-            player_background=game_state.player.background,
-            tags=game_state.tags,) 
-        
-        context.chat_history.append_system_message(
-            text=onboarding_message,
-            tags=[
-                Tag(
-                    kind=TagKindExtensions.INSTRUCTIONS,
-                    name=InstructionsTag.ONBOARDING,
-                ),
-                Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.NAME),
-                Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.BACKGROUND),
-                Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.MOTIVATION),
-                Tag(
-                    kind=TagKindExtensions.CHARACTER, name=CharacterTag.DESCRIPTION
-                ),
-                Tag(
-                    kind=TagKindExtensions.STORY_CONTEXT,
-                    name=StoryContextTag.BACKGROUND,
-                ),
-                Tag(
-                    kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.TONE
-                ),
-                Tag(
-                    kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.VOICE
-                ),
-            ],
-        )
+        append_onboarding_message(context)
         append_chat_intro_messages(context)
         
-        if game_state.player.seed_message:
-            #logging.warning(f"Appending seed message: {game_state.player.seed_message}")
-            context.chat_history.append_assistant_message(
-                text=game_state.player.seed_message,
-                tags=[                       
-                    Tag(
-                        kind=TagKindExtensions.CHARACTER,
-                        name=CharacterTag.SEED,
-                    ),
-                    Tag(kind=TagKindExtensions.CHARACTER,
-                        name=CharacterTag.INTRODUCTION),
-                    Tag(
-                        kind=TagKindExtensions.CHARACTER,
-                        name=CharacterTag.INTRODUCTION_PROMPT,
-                    ),
-                    Tag(
-                        kind=TagKindExtensions.INSTRUCTIONS,
-                        name=InstructionsTag.QUEST,
-                    ),
-                    QuestIdTag(QuestTag.CHAT_QUEST)
-                    ],
-            )
         return "OK"
         
     @post("/generate_quest_arc")

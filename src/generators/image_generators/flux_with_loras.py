@@ -84,7 +84,7 @@ class FluxImageGenerator(ImageGenerator):
 
         start = time.perf_counter()
         #logging.warning("Image theme: " + str(theme))
-        print_log("Generating image for Flux: "+str(prompt))
+        #print_log("Generating image for Flux: "+str(prompt))
         task = sd.generate(
             text=prompt,
             tags=tags,

@@ -85,7 +85,7 @@ class GetimgAiImageGenerator(ImageGenerator):
         #print(options)
         start = time.perf_counter()
         #logging.warning("Image theme: " + str(theme))
-        print_log("Generating image for Getimg: "+str(prompt)+"\nNegative prompt: "+str(negative_prompt))
+        #print_log("Generating image for Getimg: "+str(prompt)+"\nNegative prompt: "+str(negative_prompt))
         task = sd.generate(
             text=prompt,
             tags=tags,

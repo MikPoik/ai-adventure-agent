@@ -20,7 +20,7 @@ That reduces the need of the game code to perform verbose plumbing operations.
 import logging
 from typing import List, Optional, Union
 
-from steamship import Block, PluginInstance
+from steamship import Block, PluginInstance, Tag
 from steamship.agents.llms.openai import ChatOpenAI
 from steamship.agents.logging import AgentLogging
 from steamship.agents.schema import ChatHistory, ChatLLM, FinishAction
@@ -31,8 +31,12 @@ from generators.cascading_plugin import CascadingPlugin
 from schema.game_state import GameState
 from schema.image_theme import DEFAULT_THEME, PREMADE_THEMES, CustomStableDiffusionTheme, FluxTheme, GetImgTheme, ImageTheme
 from schema.server_settings import ServerSettings
-from utils.tags import QuestIdTag,QuestTag
+from utils.tags import QuestIdTag,QuestTag,StoryContextTag,InstructionsTag
 from utils.moderation_utils import mark_block_as_excluded
+from utils.tags import QuestTag,TagKindExtensions
+from utils.tags import CharacterTag
+from utils.tags import QuestIdTag
+from steamship.cli.utils import is_in_replit
 
 _STORY_GENERATOR_KEY = "story-generator"
 _FUNCTION_CAPABLE_LLM = (
@@ -48,7 +52,12 @@ _TOGETHERAI_API_KEY = "togetherai-api-key"
 _FALAI_API_KEY = "falai_api_key"
 _GETIMG_AI_API_KEY = "getimg_ai_api_key"
 _DEEPINFRA_API_KEY = "deepinfra_api_key"
+_OPENAI_API_KEY = "openai_api_key"
 
+def with_openai_key(api_key: str, context: AgentContext) -> AgentContext:
+    context.metadata[_OPENAI_API_KEY] = api_key
+    return context
+    
 def with_deepinfra_key(api_key: str, context: AgentContext) -> AgentContext:
     context.metadata[_DEEPINFRA_API_KEY] = api_key
     return context
@@ -98,18 +107,20 @@ def get_story_text_generator(
         game_state = get_game_state(context)
         preferences = game_state.preferences
 
-        open_ai_models = ["gpt-3.5-turbo", "gpt-4-1106-preview", "gpt-4","gpt-3.5-turbo-0613"]
+        open_ai_models = ["gpt-3.5-turbo", "gpt-4-1106-preview", "gpt-4","gpt-3.5-turbo-0613","gpt-4o-mini"]
         replicate_models = ["dolly_v2", "llama_v2"]
         together_ai_models = [
             "NousResearch/Nous-Hermes-2-Yi-34B",
-            "NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",
-            
+            "NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",            
             "mistralai/Mixtral-8x7B-Instruct-v0.1",
             "Gryphe/MythoMax-L2-13b",
-            "gpt-3.5-turbo-0613",
             "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
         ]
-        deepinfra_models = ["Sao10K/L3-70B-Euryale-v2.1","lizpreciatior/lzlv_70b_fp16_hf","cognitivecomputations/dolphin-2.9.1-llama-3-70b",]
+        deepinfra_models = ["Sao10K/L3-70B-Euryale-v2.1",
+                            "lizpreciatior/lzlv_70b_fp16_hf",
+                            "cognitivecomputations/dolphin-2.9.1-llama-3-70b",
+                            "Austism/chronos-hermes-13b-v2",
+                            "mistralai/Mistral-Nemo-Instruct-2407"]
 
         model_name = server_settings._select_model(
             open_ai_models + replicate_models + together_ai_models + deepinfra_models,
@@ -119,18 +130,23 @@ def get_story_text_generator(
         config = {
             "model": model_name,
             "max_tokens": server_settings.default_story_max_tokens,
-            "temperature": server_settings.default_story_temperature,
-            "repetition_penalty": server_settings.repetition_penalty,
+            "temperature": server_settings.default_story_temperature,            
             "top_p": server_settings.top_p,
-            "min_p": server_settings.min_p,
             "frequency_penalty": server_settings.frequency_penalty,
             "presence_penalty": server_settings.presence_penalty
         }
+        if model_name not in open_ai_models: 
+            config["min_p"] = server_settings.min_p
+            config["repetition_penalty"] = server_settings.repetition_penalty
+            
         plugin_handle = None
         version = None        
         
         if model_name in open_ai_models:
             plugin_handle = "gpt-4"
+            version = "0.1.4"
+            if context.metadata[_OPENAI_API_KEY]:
+                config["openai_api_key"] = context.metadata[_OPENAI_API_KEY]
         elif model_name in replicate_models:
             plugin_handle = "replicate-llm"
         elif model_name in together_ai_models:
@@ -142,8 +158,6 @@ def get_story_text_generator(
             version = "1.0.0"
             config["api_key"] = context.metadata[_DEEPINFRA_API_KEY]
         
-        #logging.warning("model: " + model_name)
-        #logging.warning("plugin_handle: " + plugin_handle)
         generator = context.client.use_plugin(plugin_handle,
                                               config=config,
                                               version=version)
@@ -178,7 +192,7 @@ def get_reasoning_generator(
         game_state = get_game_state(context)
         preferences = game_state.preferences
     
-        open_ai_models = ["gpt-3.5-turbo", "gpt-4-1106-preview", "gpt-4","gpt-3.5-turbo-0613"]
+        open_ai_models = ["gpt-3.5-turbo", "gpt-4-1106-preview", "gpt-4","gpt-3.5-turbo-0613","gpt-4o-mini"]
         replicate_models = ["dolly_v2", "llama_v2"]
         together_ai_models = [
             "NousResearch/Nous-Hermes-2-Yi-34B",
@@ -188,11 +202,14 @@ def get_reasoning_generator(
             "teknium/OpenHermes-2p5-Mistral-7B",
             "cognitivecomputations/dolphin-2.5-mixtral-8x7b",
             "Gryphe/MythoMax-L2-13b",
-            "gpt-3.5-turbo-0613",
             "teknium/OpenHermes-2-Mistral-7B",
             "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
         ]
-        deepinfra_models = ["Sao10K/L3-70B-Euryale-v2.1","lizpreciatior/lzlv_70b_fp16_hf","mistralai/Mixtral-8x7B-Instruct-v0.1"]
+        deepinfra_models = ["Sao10K/L3-70B-Euryale-v2.1",
+                            "lizpreciatior/lzlv_70b_fp16_hf",
+                            "mistralai/Mixtral-8x7B-Instruct-v0.1",
+                            "Austism/chronos-hermes-13b-v2",
+                           "mistralai/Mistral-Nemo-Instruct-2407"]
     
         model_name = server_settings._select_model(
             open_ai_models + replicate_models + together_ai_models + deepinfra_models,
@@ -209,6 +226,9 @@ def get_reasoning_generator(
     
         if model_name in open_ai_models:
             plugin_handle = "gpt-4"
+            version = "0.1.4"
+            if context.metadata[_OPENAI_API_KEY]:
+                config["openai_api_key"] = context.metadata[_OPENAI_API_KEY]
         elif model_name in replicate_models:
             plugin_handle = "replicate-llm"
         elif model_name in together_ai_models:
@@ -689,21 +709,72 @@ def get_theme(name: str, context: AgentContext) -> ImageTheme:
 
     return DEFAULT_THEME
 
-
+def print_log(message: str):
+    if is_in_replit():
+        print("[LOG] "+message)
+    else:
+        logging.warning(message)
+        
 def append_chat_intro_messages(context: AgentContext):
     game_state = get_game_state(context)
     context.chat_history.append_user_message(
-        text=f"From now on you are {game_state.player.name} in this story, always stay in character.",
+        text=f"From now on embody {game_state.player.name}, always stay in character. Begin!",
         tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
-
     )
-    context.chat_history.append_assistant_message(
-        text=f"Sure! I will now embody {game_state.player.name}.",
-        tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
+    if game_state.player.seed_message:
+        #print_log(f"Appending seed message: {game_state.player.seed_message}")
+        context.chat_history.append_assistant_message(
+            text=game_state.player.seed_message,
+            tags=[                       
+                Tag(
+                    kind=TagKindExtensions.CHARACTER,
+                    name=CharacterTag.SEED,
+                ),
+                Tag(kind=TagKindExtensions.CHARACTER,
+                    name=CharacterTag.INTRODUCTION),
+                Tag(
+                    kind=TagKindExtensions.CHARACTER,
+                    name=CharacterTag.INTRODUCTION_PROMPT,
+                ),
+                QuestIdTag(QuestTag.CHAT_QUEST)
+                ],
 
-    )
-    context.chat_history.append_user_message(
-        text=f"Now role-play with me.",
-        tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
+        )
 
-    )
+def append_onboarding_message(context: AgentContext):
+    game_state = get_game_state(context)
+    if game_state and game_state.onboarding_message:
+        onboarding_message = game_state.onboarding_message.format(
+            player_name=game_state.player.name,
+            player_description=game_state.player.description,
+            player_appearance=game_state.player.appearance,
+            player_personality=game_state.player.personality,
+            player_background=game_state.player.background,
+            tags=game_state.tags,
+            player_seed=game_state.player.seed_message)   
+        
+        context.chat_history.append_system_message(
+            text=onboarding_message.rstrip(),
+            tags=[
+                Tag(
+                    kind=TagKindExtensions.INSTRUCTIONS,
+                    name=InstructionsTag.ONBOARDING,
+                ),
+                Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.NAME),
+                Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.BACKGROUND),
+                Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.MOTIVATION),
+                Tag(
+                    kind=TagKindExtensions.CHARACTER, name=CharacterTag.DESCRIPTION
+                ),
+                Tag(
+                    kind=TagKindExtensions.STORY_CONTEXT,
+                    name=StoryContextTag.BACKGROUND,
+                ),
+                Tag(
+                    kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.TONE
+                ),
+                Tag(
+                    kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.VOICE
+                ),
+            ],
+        )

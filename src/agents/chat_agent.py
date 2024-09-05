@@ -185,11 +185,11 @@ class ChatAgent(InterruptiblePythonAgent):
         f"""\
         <Instruction>
         Pause embodying character and revert to assistant mode.
-        Given the context of conversion and last message: "{user_prompt_processed}"
+        Given the context of conversation and last message: "{user_prompt_processed}"
         
-        Imagine fitting image description keywords for an imaginary image of {game_state.player.name}, with looks like {game_state.player.appearance}
+        Imagine fitting image description keywords for an imaginary image of {game_state.player.name}, with looks like {game_state.player.appearance}.
 
-        Give your response in the following object format with json array, write up to 20 detailed image description keywords here as plist covering topics:
+        Give your response in the following object format with json array, write up to 20 detailed image description keywords here as list covering topics in order:
         {{
         "ImageDescriptionKeywords": [
             Detailed Subject Looks,
@@ -199,13 +199,12 @@ class ChatAgent(InterruptiblePythonAgent):
             Environment Description,
             Mood/Atmosphere Description,
             Style,
-            Style Execution (etc. "full body portrait, masterpiece ,realistic,skin texture,ultra detailed,highres, RAW,8k, selfie, self shot,depth of field" )
+            Style Execution (etc. "full body portrait, masterpiece ,realistic,skin texture,ultra detailed,highres, RAW,8k, selfie, self shot,depth of field"" )
         ]
         }}
         
         <reasoning>Write reasoning here</reasoning>
-        ```json\
-        """)
+        ```json""").rstrip()
 
         image_description_response = generate_image_description(
     prompt=prompt,
@@ -213,7 +212,7 @@ class ChatAgent(InterruptiblePythonAgent):
     context=context,
     )    
 
-        #logging.warning(f"Image description response:\n{is_solution_attempt_response.text}")
+        #print_log(f"Image description response:\n{image_description_response.text}")
         return image_description_response.text.strip()
 
     def generate_plan(self, game_state: GameState, context: AgentContext,
@@ -222,26 +221,22 @@ class ChatAgent(InterruptiblePythonAgent):
         prompt = textwrap.dedent(
         f"""\
         <Instruction>
-        Pause embodying character and revert to assistant mode.
-        Review the message from {game_state.player.name}: "{user_prompt_processed}".
-        
-        Task is to classify if a image should be generated in addition to the message.
-        Determine if the message contains any suggestion, gesture,action, intent,indication, or implication that an image/selfie/picture is:
-        - being described,
-        - being sent,
-        - about to be sent,
-        - going to be taken,
-        - going to snap selfie,
-        - showing a glimpse of,
-        - or intended to be shown.
+        Pause embodying character and revert to assistant mode.        
 
+        Task: Determine if an visual is requested, described or implied or shown as gesture, action description text in given last two messages.
+        Consider the following scenarios that might indicate an image request or visual gesture description:
+        1. Explicit requests: "Can you show me", "I want to see", "Send a photo", "Show me"
+        2. Implied requests: "What does it look like?", "I wish I could see that"
+        3. Actions related to images: "I'm taking a selfie", "Let me snap a picture", "I'm looking at the photo", "sends a selfie", "to take a selfie", "Here's a selfie", "Showing","Exposing", "Revealing"
+        4. Descriptions that might prompt image generation: "Imagine this scene", "Picture this","Do you like what you see?"
+        5. Gestures that might prompt image generation: *Showing*", *Exposing*", *Revealing*
+        6. Action descriptions that might prompt image generation: "Take a look", "Showing a part of body", "Exposing a part of body", "Do you like what you see?"
+        
+        Review the only following message from {game_state.player.name}: "{user_prompt_processed}" and previous user message: "{context.chat_history.last_user_message.text}".
+        
         Provide your response in the following format:
         <result>True/False</result>
-
-        <confidence>0.00-1.00</confidence>
-        
-        <reasoning>reasoning here</reasoning>\
-        """)
+        <reasoning>reasoning here</reasoning>""").rstrip()
         
         plan_response = generate_is_image_request(
     prompt=prompt,
@@ -252,13 +247,22 @@ class ChatAgent(InterruptiblePythonAgent):
         return plan_response.text.strip()
 
     def handle_image_generation(self, game_state: GameState, context: AgentContext, quest: Quest, response_text: str):
+        
+        def remove_duplicate_words(text):
+            # Split the text into words
+            words = text.split()
+            # Use a dictionary to preserve order and remove duplicates
+            unique_words = dict.fromkeys(words)
+            # Join the unique words back into a string
+            return " ".join(unique_words)
+            
         server_settings = get_server_settings(context)
 
         if not server_settings.enable_images_in_chat:
             #logging.warning(f"Image generation is disabled in server settings")
             return None
         response_plan = self.generate_plan(game_state, context, quest, user_prompt=response_text)
-        print_log("Image request: "+response_plan)
+        #print_log("**Image request**: "+response_plan)
         if "true" not in response_plan.lower():
             #logging.warning("Response did not include image suggestion")
             return None
@@ -283,7 +287,10 @@ class ChatAgent(InterruptiblePythonAgent):
                 .replace("Posture","")\
                 .replace("Cropped","")\
                 .replace("Environment Description","")\
-                .replace("Body features","")
+                .replace("Body Features","")\
+                .replace("smartphone","")
+
+                image_description = remove_duplicate_words(image_description)
                 
         except json.JSONDecodeError:
             logging.error(f"Failed to parse image description JSON. {image_description}")
