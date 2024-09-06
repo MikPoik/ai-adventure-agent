@@ -466,7 +466,7 @@ class ServerSettings(BaseModel):
     default_story_temperature: float = SettingField(
         # NEEDS WORK:
         # TODO: Add a post-processing step to coerce this to a float.
-        default=0.9,
+        default=0.8,
         label="Story LLM Temperature",
         description=
         "Temperature (creativity-factor) for the narrative generation. 0=Robot, 1=Bonkers, 0.4=Default",

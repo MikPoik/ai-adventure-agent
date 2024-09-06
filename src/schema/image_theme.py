@@ -320,7 +320,7 @@ LUSTIFY_SDXL_NSFW = CustomStableDiffusionTheme(
     #prompt_prefix="photorealistic, ",
     #prompt_suffix=", realistic, highly detailed,highres, RAW,8k",
     model=
-    "https://civitai.com/api/download/models/233092?type=Model&format=SafeTensor&size=full&fp=fp16",
+    "https://civitai.com/api/download/models/708635?type=Model&format=SafeTensor&size=pruned&fp=fp16",
     model_architecture="sdxl",
     negative_prompt_prefix="watermark, text, font, signage,deformed,airbrushed, blurry,bad anatomy, disfigured, poorly drawn face, mutated, extra limb, ugly, poorly drawn hands, missing limb, floating limbs, disconnected limbs, disconnected head, malformed hands, long neck, mutated hands and fingers, bad hands, missing fingers, cropped, mutation, poorly drawn, huge calf, bad hands, fused hand, missing hand, disappearing arms, disappearing thigh, disappearing calf, disappearing legs, missing fingers, fused fingers, abnormal eye proportion, Abnormal hands, abnormal legs, abnormal feet,  abnormal fingers",
     num_inference_steps=30,

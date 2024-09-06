@@ -185,14 +185,15 @@ class ChatAgent(InterruptiblePythonAgent):
         f"""\
         <Instruction>
         Pause embodying character and revert to assistant mode.
-        Given the context of conversation and last message: "{user_prompt_processed}"
         
         Imagine fitting image description keywords for an imaginary image of {game_state.player.name}, with looks like {game_state.player.appearance}.
+        Given the last message: "{user_prompt_processed}"
 
         Give your response in the following object format with json array, write up to 20 detailed image description keywords here as list covering topics in order:
         {{
         "ImageDescriptionKeywords": [
             Detailed Subject Looks,
+            Action,
             Body Features,
             Posture,
             Detailed Imagery,
@@ -288,7 +289,7 @@ class ChatAgent(InterruptiblePythonAgent):
                 .replace("Cropped","")\
                 .replace("Environment Description","")\
                 .replace("Body Features","")\
-                .replace("smartphone","")
+                .replace("Action","")
 
                 image_description = remove_duplicate_words(image_description)
                 
