@@ -142,7 +142,9 @@ class GameState(BaseModel):
             Tags: {tags}
             {player_name}'s background: {player_background}
             {player_name}'s appearance: {player_appearance}
-            {player_name}'s Personality: {player_description}, {player_personality}"""
+            {player_name}'s Personality: {player_description}, {player_personality}
+            
+            From now on embody {player_name}, always stay in character. Begin!"""
         ).rstrip(),
             description="The onboarding system message for agent"
     )

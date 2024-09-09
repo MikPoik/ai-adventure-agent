@@ -194,6 +194,7 @@ class ChatAgent(InterruptiblePythonAgent):
         "ImageDescriptionKeywords": [
             Detailed Subject Looks,
             Action,
+            Context,
             Body Features,
             Posture,
             Detailed Imagery,
