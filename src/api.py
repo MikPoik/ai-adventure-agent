@@ -18,9 +18,9 @@ from steamship.cli.utils import is_in_replit
 from steamship.data import TagKind
 from steamship.data.block import Block, StreamState
 from steamship.data.tags.tag_constants import RoleTag
-from steamship.invocable import Config
+from steamship.invocable import Config, package_service
 from steamship.utils.repl import AgentREPL
-
+from endpoints.index_endpoints import IndexerPipelineMixin 
 from agents.camp_agent import CampAgent
 
 from agents.diagnostic_agent import DiagnosticAgent
@@ -110,6 +110,7 @@ class AdventureGameService(AgentService):
         NpcMixin,  # Provides API Endpoints for NPC Chat Management (used by the associated web app)
         OnboardingMixin,  # Provide API Endpoints for Onboarding
         HelpMixin,  # Provide API Endpoints for hinting, etc.,
+        IndexerPipelineMixin,  # Provides API Endpoints for Indexing (used by the associated web app)
     ]
     """USED_MIXIN_CLASSES tells Steamship what additional HTTP endpoints to register on your AgentService."""
 
@@ -206,6 +207,10 @@ class AdventureGameService(AgentService):
             HelpMixin(client=self.client,
                       agent_service=cast(AgentService, self)))
 
+        self.add_mixin(
+            IndexerPipelineMixin(client=self.client,
+                       agent_service=cast(AgentService, self), invocable=self))
+        
         # Instantiate the core game agents
         function_capable_llm = ChatOpenAI(self.client)
 
@@ -416,7 +421,7 @@ if __name__ == "__main__":
         yaml_string = settings_file.read()
         server_settings = parse_yaml_raw_as(ServerSettings, yaml_string)
 
-    with open(basepath / "../example_content/tests/allison.yaml") as character_file:
+    with open(basepath / "../example_content/tests/delia.yaml") as character_file:
         yaml_string = character_file.read()
         character = parse_yaml_raw_as(HumanCharacter, yaml_string)
 

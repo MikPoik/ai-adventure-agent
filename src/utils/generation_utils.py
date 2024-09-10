@@ -51,7 +51,7 @@ from utils.tags import (
 )
 from utils.moderation_utils import is_block_excluded
 from steamship.cli.utils import is_in_replit
-
+from tools.vector_search_response_tool import VectorSearchResponseTool
 def print_log(message: str):
     if is_in_replit():
         print("[LOG] "+message)
@@ -547,6 +547,8 @@ def do_generation(
         Tag(kind=TagKind.CHAT, name="streamed-to-chat-history"),
     ])
 
+
+    
     prompt_block = None
     #Add only if in chat_mode and not generating for story
     if not "Quest Content" in generation_for or additional_context:
@@ -555,6 +557,12 @@ def do_generation(
             text=prompt,
             tags=prompt_tags,
         )
+    #else: #todo finish vector searching
+    #    vector_response_tool = VectorSearchResponseTool()
+    #    vector_response_tool.set_doc_count(10)
+    #    vector_response = ""
+    #    vector_response = vector_response_tool.run([context.chat_history.last_user_message], context=context)
+    #    print_log(f"Vector response: {vector_response}")
 
     # Intentionally reuse the filtering for the quest CONTENT
     block_indices = filter.filter_chat_history(

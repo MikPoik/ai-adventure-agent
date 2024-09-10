@@ -23,13 +23,13 @@ from utils.tags import (
 )
 from utils.context_utils import _FALAI_API_KEY
 
+
 class FluxImageGenerator(ImageGenerator):
-    PLUGIN_HANDLE: Final[str] = "fal-ai-image-generator-dev"
+    PLUGIN_HANDLE: Final[str] = "fal-ai-image-generator"
     generator_plugin_config: dict = {
-        "api_key":
-        "added_from_context",
+        "api_key": "added_from_context",
         "api_path": "fal-ai/flux-general"
-    } 
+    }
     version: str = "1.0.5"
     plugin_instance: Optional[PluginInstance] = None
 
@@ -38,20 +38,19 @@ class FluxImageGenerator(ImageGenerator):
         theme = get_theme(theme_name, context)
         if theme.is_dalle:
             raise SteamshipError(
-                f"Theme {theme_name} is DALL-E but this is the SD Generator"
-            )
+                f"Theme {theme_name} is DALL-E but this is the SD Generator")
         d = theme.dict()
         return FluxTheme.parse_obj(d)
 
     def _get_plugin_instance(self, context: AgentContext):
-        self.generator_plugin_config["api_key"] = context.metadata[_FALAI_API_KEY]
-        
+        self.generator_plugin_config["api_key"] = context.metadata[
+            _FALAI_API_KEY]
+
         if self.plugin_instance is None:
-            self.plugin_instance = context.client.use_plugin( #Need to update FAL plugin to support Flux api path!!
+            self.plugin_instance = context.client.use_plugin(  #Need to update FAL plugin to support Flux api path!!
                 plugin_handle=FluxImageGenerator.PLUGIN_HANDLE,
                 config=self.generator_plugin_config,
-                version=self.version                
-            )
+                version=self.version)
         return self.plugin_instance
 
     def generate(
@@ -68,7 +67,8 @@ class FluxImageGenerator(ImageGenerator):
 
         theme = self.get_theme(theme_name, context)
         prompt = theme.make_prompt(prompt, template_vars)
-        negative_prompt = theme.make_negative_prompt(negative_prompt, template_vars)
+        negative_prompt = theme.make_negative_prompt(negative_prompt,
+                                                     template_vars)
 
         lora_list = list(map(lambda lora: {"path": lora}, theme.loras))
         lora_json_str = json.dumps(lora_list)
@@ -94,12 +94,15 @@ class FluxImageGenerator(ImageGenerator):
             make_output_public=True,
             options=options,
         )
-        logging.debug(f"Innermost generate start task: {time.perf_counter()-start}")
+        logging.debug(
+            f"Innermost generate start task: {time.perf_counter()-start}")
         task.wait(retry_delay_s=0.1)
-        logging.debug(f"Innermost generate after wait: {time.perf_counter() - start}")
+        logging.debug(
+            f"Innermost generate after wait: {time.perf_counter() - start}")
         return task
 
-    def request_item_image_generation(self, item: Item, context: AgentContext) -> Task:
+    def request_item_image_generation(self, item: Item,
+                                      context: AgentContext) -> Task:
         game_state = get_game_state(context)
         server_settings = get_server_settings(context)
         tags = [
@@ -164,9 +167,8 @@ class FluxImageGenerator(ImageGenerator):
         )
         return task
 
-    def request_character_image_generation(
-        self, name: str, description: str, context: AgentContext
-    ) -> Task:
+    def request_character_image_generation(self, name: str, description: str,
+                                           context: AgentContext) -> Task:
         server_settings = get_server_settings(context)
         task = self.generate(
             context=context,
@@ -180,13 +182,13 @@ class FluxImageGenerator(ImageGenerator):
                 "description": description,
             },
             image_size="portrait_4_3",
-            tags=[],  # no tags, as this shouldn't be used in chathistory for anything else (at the moment)
+            tags=
+            [],  # no tags, as this shouldn't be used in chathistory for anything else (at the moment)
         )
         return task
 
-    def request_scene_image_generation(
-        self, description: str, context: AgentContext
-    ) -> Task:
+    def request_scene_image_generation(self, description: str,
+                                       context: AgentContext) -> Task:
         game_state = get_game_state(context)
         server_settings = get_server_settings(context)
 
@@ -200,7 +202,8 @@ class FluxImageGenerator(ImageGenerator):
             context=context,
             theme_name=server_settings.quest_background_theme,
             prompt=server_settings.quest_background_image_prompt,
-            negative_prompt=server_settings.quest_background_image_negative_prompt,
+            negative_prompt=server_settings.
+            quest_background_image_negative_prompt,
             template_vars={
                 "tone": server_settings.narrative_tone,
                 "genre": server_settings.narrative_voice,
@@ -215,7 +218,8 @@ class FluxImageGenerator(ImageGenerator):
         server_settings = get_server_settings(context)
 
         tags = [
-            Tag(kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.CAMP),
+            Tag(kind=TagKindExtensions.STORY_CONTEXT,
+                name=StoryContextTag.CAMP),
             Tag(kind=TagKindExtensions.CAMP, name=CampTag.IMAGE),
         ]
         task = self.generate(
@@ -232,7 +236,8 @@ class FluxImageGenerator(ImageGenerator):
         )
         return task
 
-    def request_adventure_image_generation(self, context: AgentContext) -> Task:
+    def request_adventure_image_generation(self,
+                                           context: AgentContext) -> Task:
         server_settings = get_server_settings(context)
 
         tags = []
@@ -240,7 +245,8 @@ class FluxImageGenerator(ImageGenerator):
         task = self.generate(
             context=context,
             theme_name=server_settings.adventure_image_theme,
-            prompt="Cinematic, 8k, movie advertising image, {narrative_voice}, Movie Title: {name}",
+            prompt=
+            "Cinematic, 8k, movie advertising image, {narrative_voice}, Movie Title: {name}",
             negative_prompt="",
             template_vars={
                 "narrative_voice": server_settings.narrative_voice,
@@ -253,7 +259,8 @@ class FluxImageGenerator(ImageGenerator):
         )
         return task
 
-    def request_chat_image_generation(self, description: str,context: AgentContext) -> Task:
+    def request_chat_image_generation(self, description: str,
+                                      context: AgentContext) -> Task:
         game_state = get_game_state(context)
         server_settings = get_server_settings(context)
 
@@ -262,11 +269,11 @@ class FluxImageGenerator(ImageGenerator):
         ]
         if quest_id := game_state.current_quest:
             tags.append(QuestIdTag(quest_id))
-        
+
         appearance = ""
         if game_state.player.appearance and game_state.player.appearance != "":
             appearance = f"{game_state.player.appearance}"
-            
+
         task = self.generate(
             context=context,
             theme_name=server_settings.adventure_image_theme,
@@ -276,8 +283,7 @@ class FluxImageGenerator(ImageGenerator):
                 "tone": server_settings.narrative_tone,
                 "genre": server_settings.narrative_voice,
                 "description": description,
-                "appearance" : appearance,
-
+                "appearance": appearance,
             },
             image_size="portrait_4_3",
             tags=tags,
