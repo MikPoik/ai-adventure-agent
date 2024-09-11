@@ -205,7 +205,7 @@ class ChatAgent(InterruptiblePythonAgent):
         ]
         }}
         
-        <reasoning>Write reasoning here</reasoning>
+        Return the json object.
         ```json""").rstrip()
 
         image_description_response = generate_image_description(

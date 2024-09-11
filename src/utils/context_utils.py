@@ -718,7 +718,7 @@ def print_log(message: str):
 def append_chat_intro_messages(context: AgentContext):
     game_state = get_game_state(context)
     context.chat_history.append_user_message(
-        text=f"From now on embody {game_state.player.name}, always stay in character. Begin!",
+        text=f"From now on embody {game_state.player.name} and act with me, always stay in character. Begin!",
         tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
     )
     if game_state.player.seed_message:

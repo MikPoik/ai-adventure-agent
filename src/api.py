@@ -236,7 +236,6 @@ class AdventureGameService(AgentService):
         context = with_deepinfra_key(self.config.deepinfra_api_key, context)
         context = with_openai_key(self.config.openai_api_key, context)
 
-
         return context
         
     def get_default_agent(self,
@@ -421,7 +420,7 @@ if __name__ == "__main__":
         yaml_string = settings_file.read()
         server_settings = parse_yaml_raw_as(ServerSettings, yaml_string)
 
-    with open(basepath / "../example_content/tests/delia.yaml") as character_file:
+    with open(basepath / "../example_content/tests/emma.yaml") as character_file:
         yaml_string = character_file.read()
         character = parse_yaml_raw_as(HumanCharacter, yaml_string)
 
