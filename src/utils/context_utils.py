@@ -718,7 +718,7 @@ def print_log(message: str):
 def append_chat_intro_messages(context: AgentContext):
     game_state = get_game_state(context)
     context.chat_history.append_user_message(
-        text=f"From now on embody {game_state.player.name} and act with me, always stay in character. Begin!",
+        text=f"From now on you are {game_state.player.name}, always stay in character. Begin with seed response.",
         tags=[QuestIdTag(QuestTag.CHAT_QUEST)],
     )
     if game_state.player.seed_message:
@@ -752,7 +752,7 @@ def append_onboarding_message(context: AgentContext):
             player_background=game_state.player.background,
             tags=game_state.tags,
             player_seed=game_state.player.seed_message)   
-        
+        #print_log(onboarding_message)
         context.chat_history.append_system_message(
             text=onboarding_message.rstrip(),
             tags=[
@@ -778,3 +778,44 @@ def append_onboarding_message(context: AgentContext):
                 ),
             ],
         )
+
+def update_onboarding_message_background(context: AgentContext,background=""):
+    game_state = get_game_state(context)
+    temp_game_state = GameState()    
+    
+    if game_state and temp_game_state.onboarding_message and background:
+        onboarding_message = temp_game_state.onboarding_message.format(
+            player_name=game_state.player.name,
+            player_description=game_state.player.description,
+            player_appearance=game_state.player.appearance,
+            player_personality=game_state.player.personality,
+            player_background=background,
+            tags=game_state.tags,
+            player_seed=game_state.player.seed_message)   
+
+        context.chat_history.append_system_message(
+            text=onboarding_message.rstrip(),
+            tags=[
+                Tag(
+                    kind=TagKindExtensions.INSTRUCTIONS,
+                    name=InstructionsTag.ONBOARDING,
+                ),
+                Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.NAME),
+                Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.BACKGROUND),
+                Tag(kind=TagKindExtensions.CHARACTER, name=CharacterTag.MOTIVATION),
+                Tag(
+                    kind=TagKindExtensions.CHARACTER, name=CharacterTag.DESCRIPTION
+                ),
+                Tag(
+                    kind=TagKindExtensions.STORY_CONTEXT,
+                    name=StoryContextTag.BACKGROUND,
+                ),
+                Tag(
+                    kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.TONE
+                ),
+                Tag(
+                    kind=TagKindExtensions.STORY_CONTEXT, name=StoryContextTag.VOICE
+                ),
+            ],
+        )
+        #save_game_state(game_state, context)

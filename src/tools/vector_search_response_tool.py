@@ -55,7 +55,7 @@ class VectorSearchResponseTool(VectorSearchTool):
                 continue
             for output_block in self.answer_question(input_block.text, context):
                 #print("output"+str(output_block))
-                output_str += output_block.text + "\n"
+                output_str += output_block.text + "... "
 
         return [Block(text=output_str)]
 

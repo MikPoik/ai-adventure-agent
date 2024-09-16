@@ -177,7 +177,7 @@ class OnboardingMixin(PackageMixin):
         try:
             if personality == "":
                 personality = "N/A"
-            if background == "":
+            if background == "" or background =="\n":
                 background = "N/A"
             if appearance == "":
                 appearance = "N/A"

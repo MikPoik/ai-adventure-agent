@@ -384,7 +384,7 @@ class ServerSettings(BaseModel):
     # Language Generation Settings - Story telling
     #Match list with context_utils.py model list
     default_story_model: str = SettingField(
-        default="mistralai/Mistral-Nemo-Instruct-2407",
+        default="NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",
         label="Story LLM Model",
         description="Model used to generate story text.",
         type="select",
@@ -466,7 +466,7 @@ class ServerSettings(BaseModel):
     default_story_temperature: float = SettingField(
         # NEEDS WORK:
         # TODO: Add a post-processing step to coerce this to a float.
-        default=0.8,
+        default=0.7,
         label="Story LLM Temperature",
         description=
         "Temperature (creativity-factor) for the narrative generation. 0=Robot, 1=Bonkers, 0.4=Default",
@@ -475,7 +475,7 @@ class ServerSettings(BaseModel):
         max=1,
     )
     top_p: float = SettingField(
-        default=0.8,
+        default=0.95,
         label="Top P",
         description="Top P for the narrative generation.",
         type="float"

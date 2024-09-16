@@ -38,6 +38,7 @@ from utils.context_utils import (
     get_reasoning_generator,
     get_server_settings,
     get_story_text_generator,
+    update_onboarding_message_background,
 )
 from utils.tags import (
     AgentStatusMessageTag,
@@ -238,7 +239,7 @@ def generate_is_image_request(prompt: str, quest_name: str,
     output_tags=[],
     filter=filter,
     generation_for="Is a image request",
-    stop_tokens=["</s>", "<|im_end|>","\n\n","</result>"],
+    stop_tokens=["</s>", "<|im_end|>","</result>"],
     new_file=True,
     streaming=False,
     )
@@ -557,12 +558,14 @@ def do_generation(
             text=prompt,
             tags=prompt_tags,
         )
-    #else: #todo finish vector searching
-    #    vector_response_tool = VectorSearchResponseTool()
-    #    vector_response_tool.set_doc_count(10)
-    #    vector_response = ""
-    #    vector_response = vector_response_tool.run([context.chat_history.last_user_message], context=context)
-    #    print_log(f"Vector response: {vector_response}")
+    else: #todo finish vector searching
+        vector_response_tool = VectorSearchResponseTool()
+        vector_response_tool.set_doc_count(5)
+        vector_response = vector_response_tool.run([context.chat_history.last_user_message], context=context)
+        if vector_response and vector_response[0].text:
+            update_onboarding_message_background(context, vector_response[0].text)
+            #print_log(f"Vector response: {vector_response[0].text}")
+    
 
     # Intentionally reuse the filtering for the quest CONTENT
     block_indices = filter.filter_chat_history(
