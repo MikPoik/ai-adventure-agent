@@ -384,7 +384,7 @@ class ServerSettings(BaseModel):
     # Language Generation Settings - Story telling
     #Match list with context_utils.py model list
     default_story_model: str = SettingField(
-        default="NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO",
+        default="Sao10K/L3.1-70B-Euryale-v2.2",
         label="Story LLM Model",
         description="Model used to generate story text.",
         type="select",
@@ -434,6 +434,10 @@ class ServerSettings(BaseModel):
          {
              "value": "mistralai/Mistral-Nemo-Instruct-2407",
              "label": "Mistral Nemo 12B"
+         },
+         {
+             "value": "Sao10K/L3-70B-Euryale-v2.2",
+             "label": "Sao10K/L3-70B-Euryale-v2.2"
          }
                 ],
     )

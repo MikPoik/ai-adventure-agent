@@ -117,6 +117,7 @@ def get_story_text_generator(
             "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
         ]
         deepinfra_models = ["Sao10K/L3-70B-Euryale-v2.1",
+                            "Sao10K/L3.1-70B-Euryale-v2.2",
                             "lizpreciatior/lzlv_70b_fp16_hf",
                             "cognitivecomputations/dolphin-2.9.1-llama-3-70b",
                             "Austism/chronos-hermes-13b-v2",
@@ -206,6 +207,7 @@ def get_reasoning_generator(
             "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
         ]
         deepinfra_models = ["Sao10K/L3-70B-Euryale-v2.1",
+                            "Sao10K/L3.1-70B-Euryale-v2.2",
                             "lizpreciatior/lzlv_70b_fp16_hf",
                             "mistralai/Mixtral-8x7B-Instruct-v0.1",
                             "Austism/chronos-hermes-13b-v2",

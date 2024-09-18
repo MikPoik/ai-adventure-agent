@@ -33,35 +33,35 @@ class QuestMixin(PackageMixin):
         self.client = client
         self.agent_service = agent_service
         
-        @post("append_history")
-        def append_history(self,
-                           prompt: Optional[str] = None,
-                           context_id: Optional[str] = None):
-            """Append Bolna phonecall messages to the chat history. Need to add tags to the blocks."""
-            if prompt:
-                try:
-                    # Parse the JSON string to extract messages
-                    messages = loads(prompt)
-                    context = self.agent_service.build_default_context()
+    @post("/append_history")
+    def append_history(self,
+                       prompt: Optional[str] = None,
+                       context_id: Optional[str] = None):
+        """Append Bolna phonecall messages to the chat history. Need to add tags to the blocks."""
+        if prompt:
+            try:
+                # Parse the JSON string to extract messages
+                messages = loads(prompt)
+                context = self.agent_service.build_default_context()
 
-                    # Loop through each message and add it to chat history
-                    for message in messages:
-                        if message['role'] == 'assistant':
-                            context.chat_history.append_assistant_message(
-                                text=message['content'],
-                            tags=[QuestIdTag(QuestTag.CHAT_QUEST)])
-                        elif message['role'] == 'user':
-                            context.chat_history.append_user_message(
-                                text=message['content'],
-                            tags=[QuestIdTag(QuestTag.CHAT_QUEST)])
-                except Exception as e:
-                    logging.warning(
-                        "Failed to parse prompt or append to chat history: " +
-                        str(e))
-            return "OK"
+                # Loop through each message and add it to chat history
+                for message in messages:
+                    if message['role'] == 'assistant':
+                        context.chat_history.append_assistant_message(
+                            text=message['content'],
+                        tags=[QuestIdTag(QuestTag.CHAT_QUEST)])
+                    elif message['role'] == 'user':
+                        context.chat_history.append_user_message(
+                            text=message['content'],
+                        tags=[QuestIdTag(QuestTag.CHAT_QUEST)])
+            except Exception as e:
+                logging.warning(
+                    "Failed to parse prompt or append to chat history: " +
+                    str(e))
+        return "OK"
 
     
-    @post("delete_messages")
+    @post("/delete_messages")
     def delete_messages(self, context_id="", companionId=""):
         """TODO: check if needs modification"""
         #check history length, catch errors.
