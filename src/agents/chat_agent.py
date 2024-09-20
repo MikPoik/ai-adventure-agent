@@ -225,7 +225,7 @@ class ChatAgent(InterruptiblePythonAgent):
         <Instruction>
         Pause embodying character and revert to assistant mode.        
 
-        Task: Determine if an visual is requested, described or implied or shown as gesture, action description text in given last two messages.
+        Task: Determine if an visual is requested, described or implied or shown as gesture, action description text and {game_state.player.name} agrees in given last two messages.
         Consider the following scenarios that might indicate an image request or visual gesture description:
         1. Explicit requests: "Can you show me", "I want to see", "Send a photo", "Show me"
         2. Implied requests: "What does it look like?", "I wish I could see that"

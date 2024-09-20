@@ -420,7 +420,7 @@ if __name__ == "__main__":
         yaml_string = settings_file.read()
         server_settings = parse_yaml_raw_as(ServerSettings, yaml_string)
 
-    with open(basepath / "../example_content/tests/emma.yaml") as character_file:
+    with open(basepath / "../example_content/velvet.yaml") as character_file:
         yaml_string = character_file.read()
         character = parse_yaml_raw_as(HumanCharacter, yaml_string)
 
