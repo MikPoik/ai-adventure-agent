@@ -20,7 +20,7 @@ from steamship.data.block import Block, StreamState
 from steamship.data.tags.tag_constants import RoleTag
 from steamship.invocable import Config, package_service
 from steamship.utils.repl import AgentREPL
-from endpoints.index_endpoints import IndexerPipelineMixin 
+from endpoints.index_endpoints import IndexerPipelineMixin
 from agents.camp_agent import CampAgent
 
 from agents.diagnostic_agent import DiagnosticAgent
@@ -42,7 +42,8 @@ from schema.server_settings import ServerSettings
 from utils.agent_service import AgentService
 from utils.context_utils import get_game_state, get_server_settings, save_game_state, save_server_settings, with_deepinfra_key, with_openai_key
 from utils.tags import TagKindExtensions
-from utils.context_utils import with_togetherai_key,with_falai_key,with_getimg_ai_key,with_deepinfra_key
+from utils.context_utils import with_togetherai_key, with_falai_key, with_getimg_ai_key, with_deepinfra_key
+
 
 class AdventureGameService(AgentService):
     """Deployable game that runs an instance of a magical AI Adventure Game.
@@ -146,8 +147,6 @@ class AdventureGameService(AgentService):
             description="DeepInfra API key defined",
         )
 
-
-
     config: BasicAgentServiceConfig
     """The configuration block that users who create an instance of this agent will provide."""
 
@@ -209,8 +208,9 @@ class AdventureGameService(AgentService):
 
         self.add_mixin(
             IndexerPipelineMixin(client=self.client,
-                       agent_service=cast(AgentService, self), invocable=self))
-        
+                                 agent_service=cast(AgentService, self),
+                                 invocable=self))
+
         # Instantiate the core game agents
         function_capable_llm = ChatOpenAI(self.client)
 
@@ -224,20 +224,22 @@ class AdventureGameService(AgentService):
         self.quest_agent = QuestAgent(tools=[], llm=function_capable_llm)
         self.camp_agent = CampAgent(llm=function_capable_llm)
         self.npc_agent = NpcAgent(llm=function_capable_llm)
-        self.chat_agent = ChatAgent(
-            tools=[],
-            llm=function_capable_llm)
-        
-    def build_default_context(self, context_id: Optional[str] = None, **kwargs) -> AgentContext:
-        context = super().build_default_context(context_id=context_id, **kwargs)  # Ensure you pass the keyword arguments
+        self.chat_agent = ChatAgent(tools=[], llm=function_capable_llm)
+
+    def build_default_context(self,
+                              context_id: Optional[str] = None,
+                              **kwargs) -> AgentContext:
+        context = super().build_default_context(
+            context_id=context_id,
+            **kwargs)  # Ensure you pass the keyword arguments
         context = with_togetherai_key(self.config.togetherai_api_key, context)
         context = with_falai_key(self.config.falai_api_key, context)
-        context = with_getimg_ai_key(self.config.getimg_ai_api_key,context)
+        context = with_getimg_ai_key(self.config.getimg_ai_api_key, context)
         context = with_deepinfra_key(self.config.deepinfra_api_key, context)
         context = with_openai_key(self.config.openai_api_key, context)
 
         return context
-        
+
     def get_default_agent(self,
                           throw_if_missing: bool = True) -> Optional[Agent]:
         """Returns the active agent.
@@ -251,14 +253,12 @@ class AdventureGameService(AgentService):
         - If game_state.current_quest: QUEST AGENT
         - Else: CAMP AGENT
         """
-        
 
         context = self.build_default_context()
 
         game_state = get_game_state(context)
         active_mode = game_state.active_mode
-    
-            
+
         logging.debug(
             f"Game State: {json.dumps(game_state.dict())}.",
             extra={
@@ -275,7 +275,7 @@ class AdventureGameService(AgentService):
         elif active_mode == ActiveMode.NPC_CONVERSATION:
             sub_agent = self.npc_agent
         elif active_mode == ActiveMode.CHAT:
-                sub_agent = self.chat_agent   
+            sub_agent = self.chat_agent
         elif active_mode == ActiveMode.QUEST:
             sub_agent = self.quest_agent
         elif active_mode == ActiveMode.CAMP:
@@ -339,9 +339,9 @@ class GameREPL(AgentREPL):
         responder = getattr(self.agent_instance, self.method or "prompt")
         # Send first empty string
         #self.print_object_or_objects(
-            #responder(prompt="", context_id=self.context_id, **kwargs))
+        #responder(prompt="", context_id=self.context_id, **kwargs))
         # Skip camp agent and go on a quest
-        
+
         #self.print_object_or_objects(
         #    responder(prompt="Go on a chat", # or Go on a chat/npc/quest
         #              context_id=self.context_id,
@@ -395,12 +395,14 @@ class GameREPL(AgentREPL):
                               subsequent_indent="  ",
                               break_long_words=False,
                               width=150))
-            
+
     def print_new_img_block(self, block: Block):
         tag_kinds = {tag.kind for tag in block.tags}
         tag_names = {tag.name for tag in block.tags}
 
-        if (("streamed-to-chat-history" in tag_names and block.chat_role in [RoleTag.ASSISTANT]) or block.mime_type == "image/png"):
+        if (("streamed-to-chat-history" in tag_names
+             and block.chat_role in [RoleTag.ASSISTANT])
+                or block.mime_type == "image/png"):
             tag_texts = "".join(
                 sorted({f"[{tag.kind},{tag.name}]"
                         for tag in block.tags}))
@@ -409,7 +411,7 @@ class GameREPL(AgentREPL):
                 output = f"{tag_texts} {block.text}\n"
             elif block.mime_type == "image/png":
                 output = f"{tag_texts} {block.raw_data_url}"
-                
+
             print(output)
 
 

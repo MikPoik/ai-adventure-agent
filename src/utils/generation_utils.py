@@ -53,13 +53,18 @@ from utils.tags import (
 from utils.moderation_utils import is_block_excluded
 from steamship.cli.utils import is_in_replit
 from tools.vector_search_response_tool import VectorSearchResponseTool
+
+
 def print_log(message: str):
     if is_in_replit():
-        print("[LOG] "+message)
+        print("[LOG] " + message)
     else:
         logging.warning(message)
-        
-def log_filtered_blocks(context, filter: ChatHistoryFilter, generation_for: str = "Generic"):
+
+
+def log_filtered_blocks(context,
+                        filter: ChatHistoryFilter,
+                        generation_for: str = "Generic"):
     """
     Logs the indices and texts of chat history blocks filtered by a given filter.
     """
@@ -71,7 +76,9 @@ def log_filtered_blocks(context, filter: ChatHistoryFilter, generation_for: str 
     print_log(f"[{generation_for}] Filtered blocks details:")
     for block, _ in filtered_blocks:
         if not is_block_excluded(block):
-            logging.warning(f"Block Index: {block.index_in_file},Chat Role: {block.chat_role} Text: {block.text.strip()}")
+            logging.warning(
+                f"Block Index: {block.index_in_file},Chat Role: {block.chat_role} Text: {block.text.strip()}"
+            )
 
 
 def send_agent_status_message(name: AgentStatusMessageTag,
@@ -89,12 +96,15 @@ def send_agent_status_message(name: AgentStatusMessageTag,
     emit(block, context=context)
     return block
 
-    
-def send_story_generation(prompt: str, quest_name: str,
-                          context: AgentContext, additional_context: Optional[str] = None) -> Optional[Block]:
+
+def send_story_generation(
+        prompt: str,
+        quest_name: str,
+        context: AgentContext,
+        additional_context: Optional[str] = None) -> Optional[Block]:
     """Generates and sends a background image to the player."""
     #user_block = send_user_message(context,quest_name)
-    filter=UnionFilter([
+    filter = UnionFilter([
         TagFilter(tag_types=[
             (TagKindExtensions.CHARACTER, CharacterTag.NAME),
             (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
@@ -135,7 +145,7 @@ def send_story_generation(prompt: str, quest_name: str,
             LastInventoryFilter(),
         ]),
         generation_for="Quest Content",
-        stop_tokens=["</s>", "<|im_end|>","\n\nUSER:","\n##"],
+        stop_tokens=["</s>", "<|im_end|>", "\n\nUSER:", "\n##"],
     )
     #log_filtered_blocks(context, filter, "Quest Content")
     return block
@@ -180,7 +190,7 @@ def generate_is_solution_attempt(prompt: str, quest_name: str,
                                  context: AgentContext) -> Optional[Block]:
     """Decides whether input is an attempt to solve the problem."""
     #print("prompt :"+prompt)
-    filter=UnionFilter([
+    filter = UnionFilter([
         TagFilter(tag_types=[
             (TagKindExtensions.CHARACTER, CharacterTag.NAME),
             (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
@@ -204,82 +214,84 @@ def generate_is_solution_attempt(prompt: str, quest_name: str,
         output_tags=[],
         filter=filter,
         generation_for="Is a solution attempt",
-        stop_tokens=["</s>", "<|im_end|>","\n"],
+        stop_tokens=["</s>", "<|im_end|>", "\n"],
         new_file=True,
         streaming=False,
     )
     #log_filtered_blocks(context, filter, "Quest Content Generation")
     return block
 
+
 def generate_is_image_request(prompt: str, quest_name: str,
-         context: AgentContext) -> Optional[Block]:
+                              context: AgentContext) -> Optional[Block]:
     """Decides whether input is an attempt to request image."""
     #print_log("prompt :"+prompt)
-    filter=UnionFilter([
-    TagFilter(tag_types=[
-    (TagKindExtensions.CHARACTER, CharacterTag.NAME),
-    (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
-    (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
-    (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
-    (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
-    (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
-    (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
-    ]),
-    QuestNameFilter(quest_name=quest_name),
-    LastInventoryFilter(),
+    filter = UnionFilter([
+        TagFilter(tag_types=[
+            (TagKindExtensions.CHARACTER, CharacterTag.NAME),
+            (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
+            (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
+            (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
+            (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
+            (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
+            (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
+        ]),
+        QuestNameFilter(quest_name=quest_name),
+        LastInventoryFilter(),
     ])
     block = do_token_trimmed_generation(
-    context,
-    prompt,
-    prompt_tags=[
-    Tag(kind=TagKindExtensions.QUEST,
-    name=QuestTag.IS_IMAGE_REQUEST),
-    QuestIdTag(quest_name),
-    ],
-    output_tags=[],
-    filter=filter,
-    generation_for="Is a image request",
-    stop_tokens=["</s>", "<|im_end|>","</result>"],
-    new_file=True,
-    streaming=False,
+        context,
+        prompt,
+        prompt_tags=[
+            Tag(kind=TagKindExtensions.QUEST, name=QuestTag.IS_IMAGE_REQUEST),
+            QuestIdTag(quest_name),
+        ],
+        output_tags=[],
+        filter=filter,
+        generation_for="Is a image request",
+        stop_tokens=["</s>", "<|im_end|>", "</result>"],
+        new_file=True,
+        streaming=False,
     )
     #log_filtered_blocks(context, filter, "Quest Content Generation")
     return block
 
+
 def generate_image_description(prompt: str, quest_name: str,
-     context: AgentContext) -> Optional[Block]:
+                               context: AgentContext) -> Optional[Block]:
     """Generate image description for image"""
     #print("prompt :"+prompt)
-    filter=UnionFilter([
-    TagFilter(tag_types=[
-    (TagKindExtensions.CHARACTER, CharacterTag.NAME),
-    (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
-    (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
-    (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
-    (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
-    (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
-    (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
-    ]),
-    QuestNameFilter(quest_name=quest_name),
-    LastInventoryFilter(),
+    filter = UnionFilter([
+        TagFilter(tag_types=[
+            (TagKindExtensions.CHARACTER, CharacterTag.NAME),
+            (TagKindExtensions.CHARACTER, CharacterTag.MOTIVATION),
+            (TagKindExtensions.CHARACTER, CharacterTag.DESCRIPTION),
+            (TagKindExtensions.CHARACTER, CharacterTag.BACKGROUND),
+            (TagKindExtensions.STORY_CONTEXT, StoryContextTag.TONE),
+            (TagKindExtensions.STORY_CONTEXT, StoryContextTag.BACKGROUND),
+            (TagKindExtensions.QUEST, QuestTag.QUEST_SUMMARY),
+        ]),
+        QuestNameFilter(quest_name=quest_name),
+        LastInventoryFilter(),
     ])
     block = do_token_trimmed_generation(
-    context,
-    prompt,
-    prompt_tags=[
-    Tag(kind=TagKindExtensions.QUEST,
-    name=QuestTag.IMAGE_DESCRIPTION_PROMPT),
-    QuestIdTag(quest_name),
-    ],
-    output_tags=[],
-    filter=filter,
-    generation_for="Image description",
-    stop_tokens=["</s>", "<|im_end|>","\n\n<","\n<"],
-    new_file=True,
-    streaming=False,
+        context,
+        prompt,
+        prompt_tags=[
+            Tag(kind=TagKindExtensions.QUEST,
+                name=QuestTag.IMAGE_DESCRIPTION_PROMPT),
+            QuestIdTag(quest_name),
+        ],
+        output_tags=[],
+        filter=filter,
+        generation_for="Image description",
+        stop_tokens=["</s>", "<|im_end|>", "\n\n<", "\n<"],
+        new_file=True,
+        streaming=False,
     )
     #log_filtered_blocks(context, filter, "Quest Content Generation")
     return block
+
 
 def generate_quest_summary(quest_name: str,
                            context: AgentContext,
@@ -528,10 +540,7 @@ def do_generation(
     """Generates the inventory for a merchant"""
 
     generator = None
-    generation_for_reasoning = [
-        "is a image request",
-        "image description"
-    ]
+    generation_for_reasoning = ["is a image request", "image description"]
     if generation_for.lower() in generation_for_reasoning:
         generator = get_reasoning_generator(context)
     else:
@@ -548,8 +557,6 @@ def do_generation(
         Tag(kind=TagKind.CHAT, name="streamed-to-chat-history"),
     ])
 
-
-    
     prompt_block = None
     #Add only if in chat_mode and not generating for story
     if not "Quest Content" in generation_for or additional_context:
@@ -558,20 +565,24 @@ def do_generation(
             text=prompt,
             tags=prompt_tags,
         )
-    else: #todo finish vector searching
-        vector_response_tool = VectorSearchResponseTool()
-        vector_response_tool.set_doc_count(5)
-        vector_response = vector_response_tool.run([context.chat_history.last_user_message], context=context)
-        if vector_response and vector_response[0].text:
-            update_onboarding_message_background(context, vector_response[0].text)
-            #print_log(f"Vector response: {vector_response[0].text}")
-    
+    else:  #Dont search short backstories
+        game_state = get_game_state(context)
+        if game_state and game_state.player and game_state.player.background is not None and len(
+                game_state.player.background) > 1000:
+            vector_response_tool = VectorSearchResponseTool()
+            vector_response_tool.set_doc_count(7)
+            vector_response = vector_response_tool.run(
+                [context.chat_history.last_user_message], context=context)
+            if vector_response and vector_response[0].text:
+                update_onboarding_message_background(context,
+                                                     vector_response[0].text)
+                #print_log(f"Vector response: {vector_response[0].text}")
 
     # Intentionally reuse the filtering for the quest CONTENT
     block_indices = filter.filter_chat_history(
         chat_history_file=context.chat_history.file, filter_for=generation_for)
     #logging.warning(f"block_indices: {block_indices}")
-    
+
     #Add only if in chat_mode and not generating for story
     if not "Quest Content" in generation_for or additional_context:
         #logging.warning(f"additinal_context, append indices, generation for {generation_for}")
@@ -587,9 +598,8 @@ def do_generation(
     # don't pollute workspace with temporary/working files that contain data like: "LIKELY"
     append_output_to_file = False if not output_file_id else True
 
-    
     server_settings = get_server_settings(context)
-    if  not server_settings.chat_mode:
+    if not server_settings.chat_mode:
         block_indices = sorted(block_indices)
 
     task = generator.generate(
@@ -617,7 +627,7 @@ def await_streamed_block(block: Block, context: AgentContext) -> Block:
     ]:
         time.sleep(0.4)
         block = Block.get(block.client, _id=block.id)
-    
+
     context.chat_history.file.refresh()
     return block
 
@@ -667,7 +677,7 @@ JSON:"""
             LastInventoryFilter(),
         ]),
         generation_for="Action Choices",
-        stop_tokens=["\n\n","</s>", "<|im_end|>"],
+        stop_tokens=["\n\n", "</s>", "<|im_end|>"],
         new_file=True,  # don't put this in the chat history. it is help content.
         streaming=False,
     )

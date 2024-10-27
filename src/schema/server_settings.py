@@ -427,7 +427,12 @@ class ServerSettings(BaseModel):
         }, {
             "value": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
             "label": "Meta-Llama 3.1",
-        }, {
+        },
+         {
+             "value": "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
+             "label": "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
+         },
+        {
             "value": "Austism/chronos-hermes-13b-v2",
             "label": "Chronos Hermes 13b"
         },
@@ -435,9 +440,13 @@ class ServerSettings(BaseModel):
              "value": "mistralai/Mistral-Nemo-Instruct-2407",
              "label": "Mistral Nemo 12B"
          },
+          {
+              "value": "nvidia/Llama-3.1-Nemotron-70B-Instruct",
+              "label": "Nemotron 70B"
+          },
          {
-             "value": "Sao10K/L3-70B-Euryale-v2.2",
-             "label": "Sao10K/L3-70B-Euryale-v2.2"
+             "value": "Sao10K/L3.1-70B-Euryale-v2.2",
+             "label": "Sao10K/L3.1-70B-Euryale-v2.2"
          }
                 ],
     )
